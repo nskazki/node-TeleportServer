@@ -1,0 +1,26 @@
+{
+  "name": "teleport-server",
+  "version": "0.1.1",
+  "description": "сервер и клиент (в комплекте) для удаленного вызова процедур.",
+  "main": "TeleportServer.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nskazki/TeleportServer"
+  },
+  "author": "nskazki (http://nskazki.dyndns.info/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/nskazki/TeleportServer/issues"
+  },
+  "homepage": "https://github.com/nskazki/TeleportServer",
+  "dependencies": {
+    "ws": "^0.4.31"
+  },
+  "devDependencies": {},
+  "keywords": [
+    "RPC"
+  ]
+}
