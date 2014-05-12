@@ -84,7 +84,7 @@ TeleportClient.prototype._funcWsSessionInit = function() {
 	});
 };
 
-this._funcInternalCallbackHandler = function(message) {
+TeleportClient.prototype._funcInternalCallbackHandler = function(message) {
 	if (message.internalCommand == "getObjects") {
 		if (message.error) {
 			var errorInfo = {
