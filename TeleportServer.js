@@ -116,7 +116,7 @@ TeleportServer.prototype.init = function() {
  *  получат информацю о типе события и имя объекта его возбудившего,
  *  а также признак входит ли это событие в список разрешенных.
  *
- * private
+ * @private
  * @this TeleportServer
  */
 TeleportServer.prototype._funcEmitterInit = function() {
