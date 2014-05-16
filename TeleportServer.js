@@ -28,6 +28,8 @@ util.inherits(TeleportServer, events.EventEmitter);
  * @param options.objects.someObjectName.methods {Array.<string>}
  * @param options.objects.someObjectName.events {Array.<string>}
  *
+ * @public
+ * @this {TeleportServer}
  * @return {TeleportServer}
  *
  * @example
@@ -79,6 +81,8 @@ function TeleportServer(options) {
  *  А имеенно создает web socket сервер и выполняет monkey patching EventEmittera переданных в опциях объектов.
  *
  * @public
+ * @this {TeleportServer}
+ * @return {TeleportServer}
  *
  */
 TeleportServer.prototype.init = function() {
