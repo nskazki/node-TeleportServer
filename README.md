@@ -142,7 +142,7 @@
 </ul></dd>
 </dl>
 <h5>Example</h5>
-<pre id="js" class="prettyprint"><code>var teleportServer = new TeleportServer({
+<pre id="js" class="prettyprint lang-js"><code>var teleportServer = new TeleportServer({
 objects: {
 'logBox': {
 object: logBox,
