@@ -14,7 +14,7 @@ util.inherits(TeleportServer, events.EventEmitter);
 /**
  * RPC сервер, умеет вызывать методы серверных объектов и сообщать подключенным клиентом о выбрасываемых объектами событиях
  * <br>
- * Конструктор класса TeleportServer, принимает единственным параметром объект с опциями,
+ * Конструктор класса TeleportServer, принимает единственным параметром объект с опциями,<br>
  *  возвращает новый неинециализированный объект класса TeleportServer
  *
  * @author nskazki@gmail.com
@@ -22,18 +22,14 @@ util.inherits(TeleportServer, events.EventEmitter);
  *
  * @constructor
  *
- * @param options {Object} - object containing the parameters to initialize the TeleportServer class
+ * @param options {Object} - parameters to initialize the class
  * @param options.isDebug {Boolean} - if true, the object will emit debug events.
  * @param options.port {Number} - port that the server will listen.
- * @param options.objects {Object} - object containing information about currently available to the TeleportClient objects.
- *  Field names are arbitrary.
- * @param options.objects.someObjectName {Object} - arbitrary field name containing a information about the teleported object.
- * @param options.objects.someObjectName.object {Object} - contains an object whose methods will be available to the RPC client.
- * @param options.objects.someObjectName.methods {Array.<string>} - contains an array of methods.
- *  methods should return the result of the work of the Callback function.
- * @param options.objects.someObjectName.events {Array.<string>} - contains an array of allowed events to be transferred to the RPC client.
- *
- * @return {TeleportServer}
+ * @param options.objects {Object}
+ * @param options.objects.someObjectName {Object}
+ * @param options.objects.someObjectName.object {Object}
+ * @param options.objects.someObjectName.methods {Array.<string>}
+ * @param options.objects.someObjectName.events {Array.<string>}
  *
  * @example
  * var teleportServer = new TeleportServer({
@@ -80,11 +76,10 @@ function TeleportServer(options) {
 }
 
 /**
- * Инициализирующий метод, вызывающий приватный инициализирующие методы класса.
+ * Инициализирующий метод, вызывающий приватный инициализирующие методы класса.<br>
  *  А имеенно создает web socket сервер и выполняет monkey patching EventEmittera переданных в опциях объектов.
  *
  * @public
- * @return {TeleportServer}
  *
  */
 TeleportServer.prototype.init = function() {

@@ -7,13 +7,13 @@
 <article>
 <div class="container-overview">
 <dt>
-<h4 class="name" id="TeleportServer"><span class="type-signature"></span>new TeleportServer<span class="signature">(options)</span><span class="type-signature"> &rarr; {<a href="TeleportServer.html">TeleportServer</a>}</span></h4>
+<h4 class="name" id="TeleportServer"><span class="type-signature"></span>new TeleportServer<span class="signature">(options)</span><span class="type-signature"></span></h4>
 </dt>
 <dd>
 <div class="description">
 <p>RPC сервер, умеет вызывать методы серверных объектов и сообщать подключенным клиентом о выбрасываемых объектами событиях
 <br>
-Конструктор класса TeleportServer, принимает единственным параметром объект с опциями,
+Конструктор класса TeleportServer, принимает единственным параметром объект с опциями,<br>
 возвращает новый неинециализированный объект класса TeleportServer</p>
 </div>
 <h5>Parameters:</h5>
@@ -31,7 +31,7 @@
 <td class="type">
 <span class="param-type">Object</span>
 </td>
-<td class="description last"><p>object containing the parameters to initialize the TeleportServer class</p>
+<td class="description last"><p>parameters to initialize the class</p>
 <h6>Properties</h6>
 <table class="params">
 <thead>
@@ -61,8 +61,7 @@
 <td class="type">
 <span class="param-type">Object</span>
 </td>
-<td class="description last"><p>object containing information about currently available to the TeleportClient objects.
-Field names are arbitrary.</p>
+<td class="description last">
 <h6>Properties</h6>
 <table class="params">
 <thead>
@@ -78,7 +77,7 @@ Field names are arbitrary.</p>
 <td class="type">
 <span class="param-type">Object</span>
 </td>
-<td class="description last"><p>arbitrary field name containing a information about the teleported object.</p>
+<td class="description last">
 <h6>Properties</h6>
 <table class="params">
 <thead>
@@ -94,22 +93,21 @@ Field names are arbitrary.</p>
 <td class="type">
 <span class="param-type">Object</span>
 </td>
-<td class="description last"><p>contains an object whose methods will be available to the RPC client.</p></td>
+<td class="description last"></td>
 </tr>
 <tr>
 <td class="name"><code>methods</code></td>
 <td class="type">
 <span class="param-type">Array.&lt;string></span>
 </td>
-<td class="description last"><p>contains an array of methods.
-methods should return the result of the work of the Callback function.</p></td>
+<td class="description last"></td>
 </tr>
 <tr>
 <td class="name"><code>events</code></td>
 <td class="type">
 <span class="param-type">Array.&lt;string></span>
 </td>
-<td class="description last"><p>contains an array of allowed events to be transferred to the RPC client.</p></td>
+<td class="description last"></td>
 </tr>
 </tbody>
 </table>
@@ -139,21 +137,12 @@ methods should return the result of the work of the Callback function.</p></td>
 <li>
 <a href="https://github.com/MyNodeComponents/TeleportServer/blob/master/TeleportServer.js">TeleportServer.js</a>
 <span>, </span>
-<a href="https://github.com/MyNodeComponents/TeleportServer/blob/master/TeleportServer.js#L65">lineno 65</a>
+<a href="https://github.com/MyNodeComponents/TeleportServer/blob/master/TeleportServer.js#L61">lineno 61</a>
 </li>
 </ul></dd>
 </dl>
-<h5>Returns:</h5>
-<dl>
-<dt>
-Type
-</dt>
-<dd>
-<span class="param-type"><a href="TeleportServer.html">TeleportServer</a></span>
-</dd>
-</dl>
 <h5>Example</h5>
-<pre class="prettyprint"><code>var teleportServer = new TeleportServer({
+<pre id="js" class="prettyprint"><code>var teleportServer = new TeleportServer({
 objects: {
 'logBox': {
 object: logBox,
@@ -181,11 +170,11 @@ debugLogger('teleportServer - bebug', bebug);
 </div>
 <dl>
 <dt>
-<h4 class="name" id="init"><span class="type-signature"></span>init<span class="signature">()</span><span class="type-signature"> &rarr; {<a href="TeleportServer.html">TeleportServer</a>}</span></h4>
+<h4 class="name" id="init"><span class="type-signature"></span>init<span class="signature">()</span><span class="type-signature"></span></h4>
 </dt>
 <dd>
 <div class="description">
-<p>Инициализирующий метод, вызывающий приватный инициализирующие методы класса.
+<p>Инициализирующий метод, вызывающий приватный инициализирующие методы класса.<br>
 А имеенно создает web socket сервер и выполняет monkey patching EventEmittera переданных в опциях объектов.</p>
 </div>
 <dl class="details">
@@ -194,18 +183,9 @@ debugLogger('teleportServer - bebug', bebug);
 <li>
 <a href="https://github.com/MyNodeComponents/TeleportServer/blob/master/TeleportServer.js">TeleportServer.js</a>
 <span>, </span>
-<a href="https://github.com/MyNodeComponents/TeleportServer/blob/master/TeleportServer.js#L90">lineno 90</a>
+<a href="https://github.com/MyNodeComponents/TeleportServer/blob/master/TeleportServer.js#L85">lineno 85</a>
 </li>
 </ul></dd>
-</dl>
-<h5>Returns:</h5>
-<dl>
-<dt>
-Type
-</dt>
-<dd>
-<span class="param-type"><a href="TeleportServer.html">TeleportServer</a></span>
-</dd>
 </dl>
 </dd>
 </dl>
