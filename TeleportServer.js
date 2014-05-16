@@ -1,10 +1,3 @@
-/**
- * @author nskazki
- * @classdesc rps server, based on ws
- * @version 0.1.2
- */
-
-
 "use strict"
 
 //require
@@ -19,8 +12,13 @@ util.inherits(TeleportServer, events.EventEmitter);
 
 
 /**
- * Конструктор класса TeleportServer, принимает единственным параметром структуру опций,
+ * RPC сервер, умеет вызывать методы серверных объектов и сообщать подключенным клиентом о выбрасываемых объектами событиях
+ * <br>
+ * Конструктор класса TeleportServer, принимает единственным параметром объект с опциями,
  *  возвращает новый неинециализированный объект класса TeleportServer
+ *
+ * @author nskazki@gmail.com
+ * @version 0.1.2
  *
  * @constructor
  *
