@@ -1,7 +1,7 @@
 {
   "name": "teleport-server",
-  "version": "0.1.1",
-  "description": "сервер и клиент (в комплекте) для удаленного вызова процедур.",
+  "version": "0.1.2",
+  "description": "rpc server",
   "main": "TeleportServer.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
