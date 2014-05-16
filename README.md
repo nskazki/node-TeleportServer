@@ -124,48 +124,42 @@
 </tbody>
 </table>
 <dl class="details">
-<dt class="tag-version">Version:</dt>
-<dd class="tag-version"><ul class="dummy"><li>0.1.2</li></ul></dd>
-<dt class="tag-author">Author:</dt>
-<dd class="tag-author">
-<ul>
-<li>nskazki@gmail.com</li>
-</ul>
-</dd>
 <dt class="tag-source">Source:</dt>
 <dd class="tag-source"><ul class="dummy">
 <li>
 <a href="https://github.com/MyNodeComponents/TeleportServer/blob/master/TeleportServer.js">TeleportServer.js</a>
 <span>, </span>
-<a href="https://github.com/MyNodeComponents/TeleportServer/blob/master/TeleportServer.js#L61">lineno 61</a>
+<a href="https://github.com/MyNodeComponents/TeleportServer/blob/master/TeleportServer.js#L58">lineno 58</a>
 </li>
 </ul></dd>
 </dl>
 <h5>Example</h5>
-<code id="js" class="prettyprint lang-js">var teleportServer = new TeleportServer({
-objects: {
-'logBox': {
-object: logBox,
-methods: ['getDateBounds', 'getLogs'],
-events: ['newDateBounds']
-},
-'ipBox': {
-object: ipBox,
-methods: ['getIps'],
-events: ['newIps']
-}
-},
-port: 8000,
-isDebug: false
+```js
+var teleportServer = new TeleportServer({
+	objects: {
+		'logBox': {
+			object: logBox,
+			methods: ['getDateBounds', 'getLogs'],
+			events: ['newDateBounds']
+		},
+		'ipBox': {
+			object: ipBox,
+			methods: ['getIps'],
+			events: ['newIps']
+		}
+	},
+	port: 8000,
+	isDebug: false
 }).on('error', function(error) {
-errorLogger('teleportServer - error', error);
+	errorLogger('teleportServer - error', error);
 }).on('warnLogger', function(warn) {
-warnLogger('teleportServer - warn', warn);
+	warnLogger('teleportServer - warn', warn);
 }).on('info', function(info) {
-ingoLogger('teleportServer - info', info);
+	ingoLogger('teleportServer - info', info);
 }).on('debug', function(bebug) {
-debugLogger('teleportServer - bebug', bebug);
-}).init();</code>
+	debugLogger('teleportServer - bebug', bebug);
+}).init();
+```
 </dd>
 </div>
 <dl>
@@ -183,7 +177,7 @@ debugLogger('teleportServer - bebug', bebug);
 <li>
 <a href="https://github.com/MyNodeComponents/TeleportServer/blob/master/TeleportServer.js">TeleportServer.js</a>
 <span>, </span>
-<a href="https://github.com/MyNodeComponents/TeleportServer/blob/master/TeleportServer.js#L85">lineno 85</a>
+<a href="https://github.com/MyNodeComponents/TeleportServer/blob/master/TeleportServer.js#L82">lineno 82</a>
 </li>
 </ul></dd>
 </dl>
