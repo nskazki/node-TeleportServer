@@ -142,7 +142,7 @@
 </ul></dd>
 </dl>
 <h5>Example</h5>
-<pre id="js" class="prettyprint lang-js"><code>var teleportServer = new TeleportServer({
+<code><pre id="js" class="prettyprint lang-js">var teleportServer = new TeleportServer({
 objects: {
 'logBox': {
 object: logBox,
@@ -165,7 +165,7 @@ warnLogger('teleportServer - warn', warn);
 ingoLogger('teleportServer - info', info);
 }).on('debug', function(bebug) {
 debugLogger('teleportServer - bebug', bebug);
-}).init();</code></pre>
+}).init();</pre></code>
 </dd>
 </div>
 <dl>
