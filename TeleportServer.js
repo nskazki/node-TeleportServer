@@ -28,6 +28,8 @@ util.inherits(TeleportServer, events.EventEmitter);
  * @param options.objects.someObjectName.methods {Array.<string>}
  * @param options.objects.someObjectName.events {Array.<string>}
  *
+ * @return {TeleportServer}
+ *
  * @example
  * var teleportServer = new TeleportServer({
  * 	objects: {
