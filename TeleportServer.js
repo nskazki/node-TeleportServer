@@ -260,7 +260,8 @@ TeleportServer.prototype._funcInternalCommandHandler = function(ws, message) {
 		var resultObjects = {};
 		for (var objectName in this._optionObjects) {
 			resultObjects[objectName] = {
-				methods: this._optionObjects[objectName].methods
+				methods: this._optionObjects[objectName].methods,
+				events: this._optionObjects[objectName].events
 			}
 		}
 
