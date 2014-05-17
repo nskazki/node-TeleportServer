@@ -4,6 +4,7 @@ TeleportServer
 ```
 npm install teleport-server --save
 ```
+[TeleportClient](https://github.com/MyWebComponents/TeleportClient)
 
 <h5>Это RPC сервер, умеет:</h5>
  * Сообщать клиенту о доступных объектах, их методах, типах выбрасываемых событий.
@@ -18,7 +19,7 @@ npm install teleport-server --save
 Конструктор класса TeleportServer, принимает единственным параметром объект с опциями.
 Возвращает новый неинециализированный объект класса TeleportServer.
 
-<h5>Example</h5>
+<h5>Example:</h5>
 ```js
 var teleportServer = new TeleportServer({
 	objects: {
