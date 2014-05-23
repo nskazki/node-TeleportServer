@@ -1,6 +1,6 @@
 {
   "name": "teleport-server",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "rpc server",
   "main": "TeleportServer.js",
   "scripts": {
@@ -8,14 +8,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/nskazki/TeleportServer"
+    "url": "https://github.com/nskazki/node-TeleportServer"
   },
   "author": "nskazki (http://nskazki.dyndns.info/)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/nskazki/TeleportServer/issues"
+    "url": "https://github.com/nskazki/node-TeleportServer/issues"
   },
-  "homepage": "https://github.com/nskazki/TeleportServer",
+  "homepage": "https://github.com/nskazki/node-TeleportServer",
   "dependencies": {
     "ws": "^0.4.31"
   },

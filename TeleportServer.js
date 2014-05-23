@@ -12,15 +12,26 @@ util.inherits(TeleportServer, events.EventEmitter);
 
 
 /**
-	RPC сервер, умеет вызывать методы серверных объектов и сообщать подключенным клиентом 
+	Это PC сервер, умеет вызывать методы серверных объектов и сообщать подключенным клиентом 
 	о выбрасываемых объектами событиях.
 
 	Конструктор класса TeleportServer, принимает единственным параметром объект с опциями,
 	возвращает новый неинециализированный объект класса TeleportServer
+	options = {
+		port: 8000,
+		isDebug: true,
+		objects: {
+			'simpleObject': {
+				object: simpleObject,
+				methods: 'simpleAsyncFunc',
+				events: 'myOptions'
+			}
+		}
+	}
 	
 	формат инициалируемых полей
-	this._valueWsPers = [someWsPeer, ...] - массив подключений клиентов, нужен для того 
-	чтобы бродкастом рассылать
+	this._valueWsServer - поле которое будет проиницилизированно методом _funcWsServerInit, 
+	в него будет записанна ссылка на экземпляр web socket server.
 */
 function TeleportServer(options) {
 	//options
@@ -31,17 +42,15 @@ function TeleportServer(options) {
 	//end options
 
 	//variables
-	this._valueWsPers = [];
 	this._valueWsServer = null;
-
 	this._valueIsInit = false;
 
 	//end variables
 }
 
 /**
-	Инициализирующий метод, вызывающий приватный инициализирующие методы класса.<br>
-	А имеенно создает web socket сервер и выполняет monkey patching EventEmittera переданных в опциях объектов.
+	Инициализирующий метод, вызывающий приватный инициализирующие методы класса.
+	А имеенно, создает web socket сервер и выполняет monkey patching EventEmitter-a переданных в опциях объектов.
 	
 */
 TeleportServer.prototype.init = function() {
@@ -58,18 +67,20 @@ TeleportServer.prototype.init = function() {
 //emitter
 /**
 	Приватный инициализирующий метод, выполняющий monkey patching EventEmitter-a
-	 переданных в опциях объектов (options.objects.someObjectName.object).
-		Сохраняет и подменяет оригинальный object.emit метод,
-	 в подменненном происходит обработка всех выбрасываемых объектом событий.
-		А именно если тип события входит в массив разрешенных (options.objects.someObjectName.events),
-	 то информация о имени объекта возбудившего событие (options.objects.someObjectName),
-	 тип и аргументы события передаются RPC клиенту, вызовом метода this._funcWsSendBroadcast
-		Также если isDebug == true, то подписчики события 'debug' объекта класса TeleportServer
-	 получат информацю о типе события и имя объекта его возбудившего,
-	 а также признак входит ли это событие в список разрешенных.
-		@private
-	@this TeleportServer
- */
+	переданных в опциях объектов (options.objects.someObjectName.object).
+	
+	Сохраняет и подменяет оригинальный object.emit метод,
+	в подменненном происходит обработка всех выбрасываемых объектом событий.
+	
+	А именно если тип события входит в массив разрешенных (options.objects.someObjectName.events),
+	то информация о имени объекта возбудившего событие (options.objects.someObjectName),
+	тип и аргументы события передаются RPC клиенту, вызовом метода this._funcWsSendBroadcast
+	
+	Также если isDebug == true, то подписчики события 'debug' объекта класса TeleportServer
+	получат информацю о типе события и имя объекта его возбудившего,
+	а также признак входит ли это событие в список разрешенных.
+	
+*/
 TeleportServer.prototype._funcEmitterInit = function() {
 	Object.keys(this._optionObjects).forEach(function(objectName) {
 		var object = this._optionObjects[objectName].object;
@@ -108,32 +119,29 @@ TeleportServer.prototype._funcEmitterInit = function() {
 //message hadlers
 /**
 	Приватный метод, который будет выздан анонимной функцией создоваемой методом this._funcWsOnMessageCreate,
-	 который в свою очередь вызывается когда ws server создает с пиром новое соединение.
-	 этот метод будет вызванн если в объекте message есть поле command.
-		В этой функции из объекта message извлекается информации о message.objectName к которому происходит обращение,
-	 message.command (методе объекта), и аргументах передаваемых в метод - message.args.
-		Если объект зарегистрирован в options.objects.someObjectName, и метод зарегистророванн в options.objects.someObjectName.methods
-	 то соответствующий метод, соответствующего объекта будет вызван c message.args (если есть), и созданным методом
-	 this.commandCallbackCreate каллбеком, который через замыкание будет иметь доступ к ws (соединению с пиром), и принятому запросу (message).
-	 и собственно этот анонимный каллбек и вернет результат работы метода клиенту, вызвав метод this._funcWsSend.
-		Если объект или метод объекта не зарегистрированны, то клиенту будет возвращена ошибка, причем вернуться она калбек функции которая
-	 этот незарегистрированный метод вызвала на стороне клиента. Возвращается также вызовом метода this._funcWsSend
-		@private
-	@this TeleportServer
-		@param ws {Object} - object contains a connection to the client.
-	@param message {Object} - message received from the client, containing the information about the asynchronous command to execute.
-	@param message.objectName {string} - name of the object whose method is to be called.
-	@param message.command {string} - the name of the method being called.
-	@param message.args {*=} - argument to be passed to the called method.
-	@param message.requestId {Number} - serial number of commands sent by rpc client.
-		@return anonymous {Object} - object containing the result of the command.
-	@return anonymous.objectName {string} - name of the object whose method is to be called.
-	@return anonymous.type {string} - type of message.
-	@return anonymous.command {string} - the name of the method being called.
-	@return anonymous.requestId {Number} - serial number of commands sent by rpc client.
-	@return anonymous.error {*=} - error arose as a result of the called function.
-	@return anonymous.result {*=} - result arose as a result of the called function.
-	 */
+	который в свою очередь вызывается когда ws server создает с пиром новое соединение.
+	
+	этот метод будет вызванн если в объекте message есть поле command.
+	
+	В этой функции из объекта message извлекается информации о message.objectName к которому происходит обращение,
+	message.command (методе объекта), и аргументах передаваемых в метод - message.args.
+	
+	Если объект зарегистрирован в options.objects.someObjectName, и метод зарегистророванн в options.objects.someObjectName.methods
+	то соответствующий метод, соответствующего объекта будет вызван c message.args (если есть), и созданным методом
+	this.commandCallbackCreate каллбеком, который через замыкание будет иметь доступ к ws (соединению с пиром), и принятому запросу (message).
+	и собственно этот анонимный каллбек и вернет результат работы метода клиенту, вызвав метод this._funcWsSend.
+	
+	Если объект или метод объекта не зарегистрированны, то клиенту будет возвращена ошибка, причем вернуться она калбек функции которая
+	этот незарегистрированный метод вызвала на стороне клиента. Возвращается также вызовом метода this._funcWsSend
+
+	message = {
+		type: 'command',
+		objectName: 'someObjectName',
+		command: 'someMethodName',
+		requestId: 0,
+		args: someArgs
+	}
+ */
 TeleportServer.prototype._funcCommandHandler = function(ws, message) {
 	if (!this._optionObjects[message.objectName] || (this._optionObjects[message.objectName].methods.indexOf(message.command) == -1)) {
 		var errorInfo = ({
@@ -180,22 +188,20 @@ TeleportServer.prototype._funcCommandHandler = function(ws, message) {
 
 /**
 	Приватный метод, который будет выздан анонимной функцией создоваемой методом this._funcWsOnMessageCreate,
-	 который в свою очередь вызывается когда ws server создает с пиром новое соединение.
-	 этот метод будет вызванн если в объекте message есть поле internalCommand.
-		Если тип internalCommand зарегестрированн, то команда будет выполненна
-	 и результат вернуться клиенту функцией this._funcWsSend
-		Если тип команды не зарегистророван то будет клиенту будет возвращена ошибка.
-		@private
-	@this TeleportServer
-		@param ws {Object} - object contains a connection to the client.
-	@param message {Object} - message received from the client, containing the information about the internalCommand to execute.
-	@param message.internalCommand {string} - the name of the internalCommand being called.
-		@return anonymous {Object} - object containing the result of the internalCommand.
-	@return anonymous.type {string} - type of message.
-	@return anonymous.internalCommand {string} - the name of the internalCommand.
-	@return anonymous.error {*=} - error arose as a result of the called function.
-	@return anonymous.result {*=} - result arose as a result of the called function.
-	 */
+	который в свою очередь вызывается когда ws server создает с пиром новое соединение.
+	
+	этот метод будет вызванн если в объекте message есть поле internalCommand.
+	
+	Если тип internalCommand зарегестрированн, то команда будет выполненна
+	и результат вернуться клиенту функцией this._funcWsSend
+	
+	Если тип команды не зарегистророван то будет клиенту будет возвращена ошибка.
+	
+	message = {
+		type: 'internalCommand',
+		internalCommand: 'getObjects'
+	}
+*/
 TeleportServer.prototype._funcInternalCommandHandler = function(ws, message) {
 	if (message.internalCommand == "getObjects") {
 
@@ -234,6 +240,18 @@ TeleportServer.prototype._funcInternalCommandHandler = function(ws, message) {
 //end message handlers
 
 //wss
+/**
+	Этот метод инициализирует web socket Server.
+	1. создает объект WebSocketServer, передав ему прянятый в options.port.
+	2. подписывает обработчик новых соединение клиентов с сервером, на событие 'connection',
+		когда новое соединение будет созданно, на события message этого соединения,
+		будет закреплен хендлер созданный функцией _funcWsOnMessageCreate, нужно это 
+		для того, чтобы сохранить ссылку на объект (через замыкание, для создаваемой анонимной функции) 
+		соединения с этим клиентом, потому что в моем коде web socket соединение - 
+		уникально идентифицирует связь одного клиента с сервером
+	3. поодсываюсь на события готовности 'listening' и ошибки 'error'.
+
+*/
 TeleportServer.prototype._funcWsServerInit = function() {
 	this._valueWsServer = new WebSocketServer({
 		port: this._optionWsServerPort
@@ -267,12 +285,22 @@ TeleportServer.prototype._funcWsServerInit = function() {
 	}.bind(this));
 };
 
+/**
+	Метод для рассылки сообщения всем клиентам, принимает message произвольного формата.
+	
+*/
 TeleportServer.prototype._funcWsSendBroadcast = function(message) {
 	this._valueWsServer.clients.forEach(function(ws) {
 		this._funcWsSend(ws, message);
 	}.bind(this))
 };
 
+/**
+	Метод для отпраки сообщения конкретному клиенту, 
+	принимает первым аргументом ссылку на объект сессии с клиентом, 
+	вторым произвольный message.
+
+*/
 TeleportServer.prototype._funcWsSend = function(ws, message) {
 	ws.send(
 		JSON.stringify(message),
@@ -299,6 +327,21 @@ TeleportServer.prototype._funcWsSend = function(ws, message) {
 	};
 };
 
+/**
+	Метод который будет вызван при создании нового подключения клиентом, 
+	анонимная функция им возвращенная будет подписанна на события 'message',
+	этого соединения, ссылка на само соединение будет доступна создоваемой функции 
+	через замыкание.
+
+	Анонимная функция принимает сообщение от клиента, которое обязательно должно содержать
+	поле type, на основе которого оно будет переданно соответствующим хендлерам
+
+	message = {
+		type: 'internalCommand',
+		...
+	}
+	
+*/
 TeleportServer.prototype._funcWsOnMessageCreate = function(ws) {
 	return function(sourceMessage) {
 		var message = JSON.parse(sourceMessage);
