@@ -4,7 +4,7 @@ TeleportServer
 ```
 npm install teleport-server --save
 ```
-[TeleportClient](https://github.com/MyWebComponents/TeleportClient)
+[TeleportClient](https://github.com/nskazki/web-TeleportClient)
 
 <h5>Это RPC сервер, умеет:</h5>
  * Сообщать клиенту о доступных объектах, их методах, типах выбрасываемых событий.
@@ -41,8 +41,9 @@ var teleportServer = new TeleportServer({
 }).on('warnLogger', function(warn) {
 	warnLogger('teleportServer - warn', warn);
 }).on('info', function(info) {
-	ingoLogger('teleportServer - info', info);
+	infoLogger('teleportServer - info', info);
 }).on('debug', function(bebug) {
 	debugLogger('teleportServer - bebug', bebug);
 }).init();
 ```
+<code>errorLogger</code>,  <code>warnLogger</code>,  <code>infoLogger</code> и <code>debugLogger</code>, это функции созданные функциями высшего порядка класса [MyLogger](https://github.com/nskazki/node-MyLogger).
