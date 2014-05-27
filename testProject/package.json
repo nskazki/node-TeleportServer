@@ -10,6 +10,7 @@
   "license": "MIT",
   "dependencies": {
     "colors": "^0.6.2",
-    "my-logger": "^0.1.0"
+    "my-logger": "^0.1.0",
+    "teleport-server": "^0.1.4"
   }
 }

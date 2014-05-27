@@ -1,6 +1,6 @@
 "use strict";
 
-var TeleportServer = require('../TeleportServer');
+var TeleportServer = require('teleport-server');
 var MyLogger = require('my-logger');
 
 var util = require('util');
@@ -54,8 +54,8 @@ var teleportServer = new TeleportServer({
 	objects: {
 		'simpleObject': {
 			object: simpleObject,
-			methods: 'simpleAsyncFunc',
-			events: 'myOptions'
+			methods: ['simpleAsyncFunc'],
+			events: ['myOptions']
 		}
 	}
 }).on('error', function(error) {
