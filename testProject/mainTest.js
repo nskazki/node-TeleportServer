@@ -26,6 +26,10 @@ SimpleObject.prototype.initIntervalEventEmitter = function() {
 		this.emit('myOptions', this.options);
 	}.bind(this), 10000);
 
+	setInterval(function() {
+		this.emit('emptyEvent');
+	}.bind(this), 10000);
+
 	return this;
 };
 
@@ -55,7 +59,7 @@ var teleportServer = new TeleportServer({
 		'simpleObject': {
 			object: simpleObject,
 			methods: ['simpleAsyncFunc'],
-			events: ['myOptions']
+			events: ['myOptions', 'emptyEvent']
 		}
 	}
 }).on('error', function(error) {
