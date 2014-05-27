@@ -15,7 +15,7 @@ function SimpleObject(options) {
 };
 
 SimpleObject.prototype.simpleAsyncFunc = function(param, callbaclk) {
-	callbaclk({
+	callbaclk(null, {
 		receivedParam: param,
 		internalOptions: this.options,
 	});
