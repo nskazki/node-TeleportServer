@@ -49,7 +49,7 @@ var teleportServer = new TeleportServer({
 }).init();
 ```
 
-<h5>Заметки<h5>
+<h5>Заметки</h5>
  * <code>errorLogger</code>,  <code>warnLogger</code>,  <code>infoLogger</code> и <code>debugLogger</code>, это функции созданные функциями высшего порядка класса [MyLogger](https://github.com/nskazki/node-MyLogger).
 
  * При установлении соеденения с новым клиентом объект класса TeleportServer выбрасывает событие <code>newClientConnected</code>, 
