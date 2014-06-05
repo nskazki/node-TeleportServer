@@ -1,6 +1,6 @@
 "use strict";
 
-var TeleportServer = require('teleport-server');
+var TeleportServer = require('../TeleportServer.js'); //teleport-server
 var MyLogger = require('my-logger');
 
 var util = require('util');
@@ -14,21 +14,45 @@ function SimpleObject(options) {
 	this.options = options;
 };
 
-SimpleObject.prototype.simpleAsyncFunc = function(param, callbaclk) {
-	callbaclk(null, {
+SimpleObject.prototype.simpleFunc = function(param, callback) {
+	callback(null, {
 		receivedParam: param,
 		internalOptions: this.options,
 	});
 };
 
-SimpleObject.prototype.initIntervalEventEmitter = function() {
-	setInterval(function() {
-		this.emit('myOptions', this.options);
-	}.bind(this), 10000);
+SimpleObject.prototype.simpleFuncWithUnlimArgs = function() {
+	var args = Array.prototype.slice.call(arguments, 0, arguments.length - 1);
+	var callback = arguments[arguments.length - 1];
 
-	setInterval(function() {
-		this.emit('emptyEvent');
-	}.bind(this), 10000);
+	callback(null, {
+		receivedParam: args,
+		internalOptions: this.options
+	});
+};
+
+SimpleObject.prototype.simpleFuncWithoutArgs = function(callback) {
+	callback(null, {
+		internalOptions: this.options
+	});
+};
+
+SimpleObject.prototype.emitEventWithOptions = function() {
+	this.emit('eventWithMyOptions', this.options);
+
+	return this;
+};
+
+SimpleObject.prototype.emitEventWithoutArgs = function() {
+	this.emit('eventWithoutArgs');
+
+	return this;
+};
+
+SimpleObject.prototype.emitEventWithUnlimArgs = function() {
+	this.emit('eventWithUnlimArgs', false, 1, '2', {
+		3: '>:3'
+	}, new Date());
 
 	return this;
 };
@@ -39,7 +63,9 @@ SimpleObject.prototype.initIntervalEventEmitter = function() {
 //	simpleObject
 var simpleObject = new SimpleObject({
 	foo: 'bar'
-}).initIntervalEventEmitter();
+})
+	.emitEventWithOptions()
+	.emitEventWithoutArgs();
 
 //	end simpleObject
 
@@ -58,8 +84,8 @@ var teleportServer = new TeleportServer({
 	objects: {
 		'simpleObject': {
 			object: simpleObject,
-			methods: ['simpleAsyncFunc'],
-			events: ['myOptions', 'emptyEvent']
+			methods: ['simpleFunc', 'simpleFuncWithUnlimArgs', 'simpleFuncWithoutArgs'],
+			events: ['eventWithMyOptions', 'eventWithoutArgs', 'eventWithUnlimArgs']
 		}
 	}
 }).on('error', function(error) {
@@ -70,6 +96,11 @@ var teleportServer = new TeleportServer({
 	infoLogger('teleportServer - info', info);
 }).on('debug', function(bebug) {
 	debugLogger('teleportServer - bebug', bebug);
+}).on('newClientConnected', function() {
+	simpleObject
+		.emitEventWithoutArgs()
+		.emitEventWithOptions()
+		.emitEventWithUnlimArgs();
 }).init();
 
 //	end teleportServer
