@@ -13,7 +13,9 @@ npm install teleport-server --save
 
 <h5>Ограничения:</h5>
  * Работает только с объектами.
- * Работает только с асинхронными методоми объктов, принимающими не больше одного аргумента и callback.
+ * Работает только с асинхронными методоми объктов, принимающими callback и неограниченное количество аргументов.
+ * Выбрасываемые события могут содержать неограниченное количество аргументов.
+ * Все аргументы передоваемые на сервер и результаты возвращаемые на клиента проходят через JSON.stringify -> JSON.parse.
 
 <h5>Пояснение к Example:</h5>
 Конструктор класса TeleportServer, принимает единственным параметром объект с опциями.
@@ -46,4 +48,8 @@ var teleportServer = new TeleportServer({
 	debugLogger('teleportServer - bebug', bebug);
 }).init();
 ```
-<code>errorLogger</code>,  <code>warnLogger</code>,  <code>infoLogger</code> и <code>debugLogger</code>, это функции созданные функциями высшего порядка класса [MyLogger](https://github.com/nskazki/node-MyLogger).
+
+<h5>Заметки<h5>
+ * <code>errorLogger</code>,  <code>warnLogger</code>,  <code>infoLogger</code> и <code>debugLogger</code>, это функции созданные функциями высшего порядка класса [MyLogger](https://github.com/nskazki/node-MyLogger).
+
+ * При установлении соеденения с новым клиентом объект класса TeleportServer выбрасывает событие <code>newClientConnected</code>, 
