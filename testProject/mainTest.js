@@ -90,7 +90,7 @@ var teleportServer = new TeleportServer({
 	}
 }).on('error', function(error) {
 	errorLogger('teleportServer - error', error);
-}).on('warnLogger', function(warn) {
+}).on('warn', function(warn) {
 	warnLogger('teleportServer - warn', warn);
 }).on('info', function(info) {
 	infoLogger('teleportServer - info', info);
