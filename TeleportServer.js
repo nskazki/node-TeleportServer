@@ -235,13 +235,13 @@ TeleportServer.prototype._funcInternalCommandHandler = function(ws, message) {
 
 		this._funcWsSend(ws, result);
 
-		this.emit('debug', {
+		if (this._optionIsDebug) this.emit('debug', {
 			desc: 'Подключившийся клиент запросил свойства серверных объектов',
 			result: result
 		});
 	} else if (message.internalCommand == "objectСreationСompleted") {
 		this.emit('newClientConnected');
-		this.emit('debug', {
+		if (this._optionIsDebug) this.emit('debug', {
 			desc: 'Соединение с новым клентом успешно установленно, все серверные объекты на клиенте инициализированны.\nВыброшенно событие \'newClientConnected\''
 		});
 	} else {
