@@ -87,35 +87,38 @@ TeleportServer.prototype.init = function() {
 TeleportServer.prototype._funcEmitterInit = function() {
 	Object.keys(this._optionObjects).forEach(function(objectName) {
 		var object = this._optionObjects[objectName].object;
-
 		var events = this._optionObjects[objectName].events;
 
-		var vanillaEmit = object.emit;
-		object.emit = function() {
-			var event = arguments[0];
-			var args = Array.prototype.slice.call(arguments, 1, arguments.length);
+		if (events && object.emit) {
+			
 
-			var isEventTeleporting = events.indexOf(event) != -1;
+			var vanillaEmit = object.emit;
+			object.emit = function() {
+				var event = arguments[0];
+				var args = Array.prototype.slice.call(arguments, 1, arguments.length);
 
-			if (this._optionIsDebug) this.emit("debug", {
-				desc: "TeleportServer: зарегистрированный объект выбросил событие.",
-				objectName: objectName,
-				event: event,
-				isEventTeleporting: isEventTeleporting,
-				permitEvents: events
-			});
+				var isEventTeleporting = events.indexOf(event) != -1;
 
-			if (isEventTeleporting) {
-				this._funcWsSendBroadcast({
+				if (this._optionIsDebug) this.emit("debug", {
+					desc: "TeleportServer: зарегистрированный объект выбросил событие.",
 					objectName: objectName,
-					type: "event",
 					event: event,
-					args: args
+					isEventTeleporting: isEventTeleporting,
+					permitEvents: events
 				});
-			}
 
-			vanillaEmit.apply(object, arguments);
-		}.bind(this);
+				if (isEventTeleporting) {
+					this._funcWsSendBroadcast({
+						objectName: objectName,
+						type: "event",
+						event: event,
+						args: args
+					});
+				}
+
+				vanillaEmit.apply(object, arguments);
+			}.bind(this);
+		}
 	}.bind(this));
 };
 
@@ -150,7 +153,7 @@ TeleportServer.prototype._funcEmitterInit = function() {
 
  */
 TeleportServer.prototype._funcCommandHandler = function(ws, message) {
-	if (!this._optionObjects[message.objectName] || (this._optionObjects[message.objectName].methods.indexOf(message.command) == -1)) {
+	if (!this._optionObjects[message.objectName] || !this._optionObjects[message.objectName].methods || (this._optionObjects[message.objectName].methods.indexOf(message.command) == -1)) {
 		var errorInfo = ({
 			desc: "TeleportServer: попытка вызвать незарегистророванную функцию",
 			message: message
@@ -164,7 +167,7 @@ TeleportServer.prototype._funcCommandHandler = function(ws, message) {
 			error: errorInfo
 		});
 
-		this.emit("error", errorInfo);
+		this.emit('warn', errorInfo);
 	} else {
 		var callback = commandCallbackCreate(message).bind(this);
 
@@ -256,7 +259,7 @@ TeleportServer.prototype._funcInternalCommandHandler = function(ws, message) {
 			error: errorInfo
 		});
 
-		this.emit("error", errorInfo);
+		this.emit('warn', errorInfo);
 	}
 };
 
@@ -304,7 +307,7 @@ TeleportServer.prototype._funcWsServerInit = function() {
 		};
 
 		this.emit('info', info);
-		this.emit('listening');
+		this.emit('ready');
 	}.bind(this));
 };
 
@@ -384,7 +387,7 @@ TeleportServer.prototype._funcWsOnMessageCreate = function(ws) {
 				message: message
 			});
 
-			this.emit("error", errorInfo);
+			this.emit('warn', errorInfo);
 		}
 	};
 };
