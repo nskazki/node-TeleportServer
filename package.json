@@ -1,6 +1,6 @@
 {
   "name": "teleport-server",
-  "version": "0.2.12",
+  "version": "0.2.13",
   "description": "rpc server",
   "main": "TeleportServer.js",
   "scripts": {
