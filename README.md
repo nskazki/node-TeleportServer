@@ -57,9 +57,11 @@ var teleportServer = new TeleportServer({
 		.on('close', function() {
 			warnLogger('main - restart TeleportServer', {
 				desc: "Перезапускаю TeleportServer."
+				port: 8000,
+				delay: 1000*20
 			});
 
-			initTeleportServer();
+			setTimeout(initTeleportServer, 1000*20);
 		}).init();
 })();
 ```
