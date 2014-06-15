@@ -67,6 +67,63 @@ TeleportServer.prototype.init = function() {
 	return this;
 };
 
+/**
+	Метод деструктор.
+	Закрывает WebSocket Server, разрывает все соединения с пирами - метод this._valueIsInit.close()
+	Снимает всех подписчиков с WSS
+	Восстанавливает метод emit у всех серверных объектов у которых он выл подменен
+	Выбрасывает последние `info` and `close` и удалеет всех подписчиков на собития this
+	И в конце ставить флаг "не инициализирован" this._valueIsInit = false
+
+	isError - флаг указывающий прикращена ли работа сервера в следствии ошибки или штатно.
+
+*/
+TeleportServer.prototype.destroy = function(isError) {
+	if (this._valueIsInit) {
+		this._valueWsServer.close();
+
+		this._valueWsServer
+			.removeAllListeners('listening')
+			.removeAllListeners('error')
+			.removeAllListeners('connection');
+
+		for (var objName in this._optionObjects) {
+			var object = this._optionObjects[objName].object;
+
+			if (object.emit && object.__vanillaEmit__) {
+				object.emit = object.__vanillaEmit__;
+				delete object.__vanillaEmit__;
+			}
+		}
+
+		if (isError) {
+			this.emit('error', {
+				desc: 'TeleportServer: Работа сервера прекращена в следствии ошибки, все соединения разорванны, подписчики на серверные события будут пудаленны.'
+			})
+		} else {
+			this.emit('info', {
+				desc: 'TeleportServer: Работа сервера штатно прекращена, все соединения с пирами разорванны, подписчики на серверные события будут удаленны.'
+			});
+		}
+
+
+		this.emit('close');
+
+		this
+			.removeAllListeners('error')
+			.removeAllListeners('warn')
+			.removeAllListeners('info')
+			.removeAllListeners('debug')
+			.removeAllListeners('ready')
+			.removeAllListeners('close')
+			.removeAllListeners('newClientConnected');
+
+		this._valueIsInit = false;
+	}
+
+	return this;
+}
+
 //emitter
 /**
 	Приватный инициализирующий метод, выполняющий monkey patching EventEmitter-a
@@ -90,9 +147,8 @@ TeleportServer.prototype._funcEmitterInit = function() {
 		var events = this._optionObjects[objectName].events;
 
 		if (events && object.emit) {
-			
+			object.__vanillaEmit__ = object.emit;
 
-			var vanillaEmit = object.emit;
 			object.emit = function() {
 				var event = arguments[0];
 				var args = Array.prototype.slice.call(arguments, 1, arguments.length);
@@ -116,7 +172,7 @@ TeleportServer.prototype._funcEmitterInit = function() {
 					});
 				}
 
-				vanillaEmit.apply(object, arguments);
+				object.__vanillaEmit__.apply(object, arguments);
 			}.bind(this);
 		}
 	}.bind(this));
@@ -239,13 +295,13 @@ TeleportServer.prototype._funcInternalCommandHandler = function(ws, message) {
 		this._funcWsSend(ws, result);
 
 		if (this._optionIsDebug) this.emit('debug', {
-			desc: 'Подключившийся клиент запросил свойства серверных объектов',
+			desc: 'TeleportServer: Подключившийся клиент запросил свойства серверных объектов',
 			result: result
 		});
 	} else if (message.internalCommand == "objectСreationСompleted") {
 		this.emit('newClientConnected');
 		if (this._optionIsDebug) this.emit('debug', {
-			desc: 'Соединение с новым клентом успешно установленно, все серверные объекты на клиенте инициализированны.\nВыброшенно событие \'newClientConnected\''
+			desc: 'TeleportServer: Соединение с новым клентом успешно установленно, все серверные объекты на клиенте инициализированны.\nВыброшенно событие \'newClientConnected\''
 		});
 	} else {
 		var errorInfo = ({
@@ -277,6 +333,10 @@ TeleportServer.prototype._funcInternalCommandHandler = function(ws, message) {
 		уникально идентифицирует связь одного клиента с сервером
 	3. поодсываюсь на события готовности 'listening' и ошибки 'error'.
 
+	Важно заметить, что если выброшенно событие `error` сервером, значит он совсем сломался,
+	а без него существование TeleportServer бессмысленно, поэтому свою работу this прекращает.
+	вызовом метода `this.destroy()`
+
 */
 TeleportServer.prototype._funcWsServerInit = function() {
 	this._valueWsServer = new WebSocketServer({
@@ -288,13 +348,15 @@ TeleportServer.prototype._funcWsServerInit = function() {
 			desc: "TeleportServer: Web Socket сервер выбросил ошибку.",
 			error: error
 		});
+
+		this.destroy('error');
 	}.bind(this));
 
 	this._valueWsServer.on('connection', function(ws) {
 		ws.on('message', this._funcWsOnMessageCreate(ws).bind(this));
 		ws.on('error', function(err) {
 			if (this._optionIsDebug) this.emit('debug', {
-				desc: "Произошла ошибка соединения с пиром",
+				desc: "TeleportServer: Произошла ошибка соединения с пиром",
 				error: err
 			});
 		}.bind(this));
@@ -326,11 +388,32 @@ TeleportServer.prototype._funcWsSendBroadcast = function(message) {
 	принимает первым аргументом ссылку на объект сессии с клиентом, 
 	вторым произвольный message.
 
+	Проверка на `readyState`введена всвязи с добавлением метода destroy
+	так как когда сервер закрыватся, все соединения с пирами разрываются 
+	(можно не разрывать если вызывать метод this._valueWsServer._serverClose())
+	и вполне вероятная ситуация, в силу асинхронной природы js,
+	в которой метод некоторого серверного возвращает данные через калбек,
+	когда соединение уже разорванно.
+
+	Так же стоит отметить, что ws сам при выполнении метода send проверяет readyState,
+	но в случае если он отличен от OPEN возвращает слишком не информативную ошибку.
+
 */
 TeleportServer.prototype._funcWsSend = function(ws, message) {
-	ws.send(
-		JSON.stringify(message),
-		wsSendedCreate(message).bind(this));
+	if (ws.readyState == ws.OPEN) { //["CONNECTING", "OPEN", "CLOSING", "CLOSED"]
+		ws.send(
+			JSON.stringify(message),
+			wsSendedCreate(message).bind(this));
+	} else {
+		var string = JSON.stringify(message);
+		if (string.length > 400) string = string.substring(0, 400);
+		else string = message;
+
+		this.emit("warn", {
+			desc: "TeleportServer: Сообщение приру отправлено не будет, так как соединение с ним закрылось",
+			toSend: string
+		});
+	}
 
 	function wsSendedCreate(toSend) {
 		return function(error) {
