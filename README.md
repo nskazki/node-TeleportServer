@@ -19,33 +19,43 @@ npm install teleport-server --save
 
 <h5>Example:</h5>
 ```js
-var teleportServer = new TeleportServer({
-	objects: {
-		'logBox': {
-			object: logBox,
-			methods: ['getDateBounds', 'getLogs'],
+var teleportServer = null;
+
+(function initTeleportServer() {
+	teleportServer = new TeleportServer({
+	var teleportServer = new TeleportServer({
+		objects: {
+			'logBox': {
+				object: logBox,
+				methods: ['getDateBounds', 'getLogs'],
+			},
+			'ipBox': {
+				object: ipBox,
+				events: ['newIps']
+			},
+			'blackBox': {
+				object: rainbowBox,
+				methods: ['getColor'],
+				events: ['newColor']
+			}
 		},
-		'ipBox': {
-			object: ipBox,
-			events: ['newIps']
-		},
-		'blackBox': {
-			object: rainbowBox,
-			methods: ['getColor'],
-			events: ['newColor']
-		}
-	},
-	port: 8000,
-	isDebug: false
-}).on('error', function(error) {
-	errorLogger('teleportServer - error', error);
-}).on('warn', function(warn) {
-	warnLogger('teleportServer - warn', warn);
-}).on('info', function(info) {
-	infoLogger('teleportServer - info', info);
-}).on('debug', function(bebug) {
-	debugLogger('teleportServer - bebug', bebug);
-}).init();
+		port: 8000,
+		isDebug: false
+	}).on('error', function(error) {
+		errorLogger('teleportServer - error', error);
+	}).on('warn', function(warn) {
+		warnLogger('teleportServer - warn', warn);
+	}).on('info', function(info) {
+		infoLogger('teleportServer - info', info);
+	}).on('debug', function(bebug) {
+		debugLogger('teleportServer - bebug', bebug);
+	}).on('ready', function() {
+		debugLogger('teleportServer - ready', ':)');
+	}).on('newClientConnected', function(){
+		debugLogger('teleportServer - new client connected', ':)');
+	})
+	.on('close', initTeleportServer).init();
+})();
 ```
 
 <h5>Заметка к Example:</h5>
@@ -53,6 +63,7 @@ var teleportServer = new TeleportServer({
 
 <h5>Публичные методы:</h5>
  * `init` - метод инициирующий объект.
+ * `destoy` - метод прекращающий работу объекта.
 
 <h5>Events:</h5>
  * `info` - оповещения информационного характера, в частности о готовности к работе ws сервера. Выбрасывается с одним аргументом, содержашим информационные подробности.
@@ -62,3 +73,4 @@ var teleportServer = new TeleportServer({
 
  * `ready` - оповещение о том, что сервер готов к работе. Без аргументов.
  * `newClientConnected` - оповещение о том, что с сервером установил соединение новый клиент. Без аргументов.
+ * `close' - оповещение о прекращении работы TeleportServer, сообщает о том, что Web Socket Server закрыт, все подписчики с объекта класса TeleportServer сняты, и соединения с ws клиентами закрыты. Будет выброшенн если вызван метод `destoy` явно из кода, или в следствии возникновении ошибки внутри Web Socket Server. Без аргументов.
