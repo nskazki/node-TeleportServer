@@ -16,6 +16,7 @@ function SimpleObject(options) {
 
 SimpleObject.prototype.simpleFunc = function(param, callback) {
 	callback(null, {
+		name: 'simpleFunc',
 		receivedParam: param,
 		internalOptions: this.options,
 	});
@@ -26,6 +27,7 @@ SimpleObject.prototype.simpleFuncWithUnlimArgs = function() {
 	var callback = arguments[arguments.length - 1];
 
 	callback(null, {
+		name: 'simpleFuncWithUnlimArgs',
 		receivedParam: args,
 		internalOptions: this.options
 	});
@@ -33,6 +35,7 @@ SimpleObject.prototype.simpleFuncWithUnlimArgs = function() {
 
 SimpleObject.prototype.simpleFuncWithoutArgs = function(callback) {
 	callback(null, {
+		name: 'simpleFuncWithoutArgs',
 		internalOptions: this.options
 	});
 };
@@ -57,13 +60,26 @@ SimpleObject.prototype.emitEventWithUnlimArgs = function() {
 	return this;
 };
 
+SimpleObject.prototype.simpleFuncWith10SecDelay = function(callback) {
+	setTimeout(function() {
+		callback(null, {
+			name: 'simpleFuncWith10SecDelay',
+			internalOptions: this.options
+		});
+	}.bind(this), 1000 * 10);
+}
+
+SimpleObject.prototype.serverDestroy = function() {
+	teleportServer.destroy();
+};
+
 //end SimpleObject
 
 //main
 //	simpleObject
 var simpleObject = new SimpleObject({
-	foo: 'bar'
-})
+		foo: 'bar'
+	})
 	.emitEventWithOptions()
 	.emitEventWithoutArgs();
 
@@ -80,28 +96,40 @@ var debugLogger = new MyLogger.CusotomLogger('mainTest', "DEBG", colors.cyan);
 //	teleportServer
 var teleportServer = new TeleportServer({
 	port: 8000,
-	isDebug: true,
+	isDebug: false,
 	objects: {
 		'simpleObject': {
 			object: simpleObject,
-			methods: ['simpleFunc', 'simpleFuncWithUnlimArgs', 'simpleFuncWithoutArgs'],
+			methods: ['simpleFunc', 'simpleFuncWithUnlimArgs', 'simpleFuncWithoutArgs',
+				'simpleFuncWith10SecDelay', 'serverDestroy'
+			],
 			events: ['eventWithMyOptions', 'eventWithoutArgs', 'eventWithUnlimArgs']
 		}
 	}
-}).on('error', function(error) {
-	errorLogger('teleportServer - error', error);
-}).on('warn', function(warn) {
-	warnLogger('teleportServer - warn', warn);
-}).on('info', function(info) {
-	infoLogger('teleportServer - info', info);
-}).on('debug', function(bebug) {
-	debugLogger('teleportServer - bebug', bebug);
-}).on('newClientConnected', function() {
-	simpleObject
-		.emitEventWithoutArgs()
-		.emitEventWithOptions()
-		.emitEventWithUnlimArgs();
-}).init();
+});
+
+(function initTeleportServer() {
+	teleportServer.on('error', function(error) {
+		errorLogger('teleportServer - error', error);
+	}).on('warn', function(warn) {
+		warnLogger('teleportServer - warn', warn);
+	}).on('info', function(info) {
+		infoLogger('teleportServer - info', info);
+	}).on('debug', function(bebug) {
+		debugLogger('teleportServer - bebug', bebug);
+	}).on('close', function() {
+		warnLogger('mainTest - restart TeleportServer', {
+			desc: "Перезапускаю TeleportServer."
+		});
+
+		initTeleportServer();
+	}).on('newClientConnected', function() {
+		simpleObject
+			.emitEventWithoutArgs()
+			.emitEventWithOptions()
+			.emitEventWithUnlimArgs();
+	}).init();
+})();
 
 //	end teleportServer
 
