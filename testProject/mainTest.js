@@ -15,6 +15,8 @@ function SimpleObject(options) {
 };
 
 SimpleObject.prototype.simpleFunc = function(param, callback) {
+	if (!callback) callback = param;
+
 	callback(null, {
 		name: 'simpleFunc',
 		receivedParam: param,
@@ -68,17 +70,21 @@ SimpleObject.prototype.initIntevralEvent = function() {
 	return this;
 };
 
-SimpleObject.prototype.simpleFuncWith5SecDelay = function(callback) {
+SimpleObject.prototype.simpleFuncWith10SecDelay = function(callback) {
 	setTimeout(function() {
 		callback(null, {
-			name: 'simpleFuncWith5SecDelay',
+			name: 'simpleFuncWith10SecDelay',
 			internalOptions: this.options
 		});
-	}.bind(this), 1000 * 1);
+	}.bind(this), 1000 * 10);
+
+	return this;
 }
 
 SimpleObject.prototype.serverDestroy = function() {
 	teleportServer.destroy();
+
+	return this;
 };
 
 //end SimpleObject
@@ -102,12 +108,12 @@ var debugLogger = new MyLogger.CusotomLogger('mainTest', "DEBG", colors.cyan);
 //	teleportServer
 var teleportServer = new TeleportServer({
 	port: 8000,
-	isDebug: false,
+	isDebug: true,
 	objects: {
 		'simpleObject': {
 			object: simpleObject,
 			methods: ['simpleFunc', 'simpleFuncWithUnlimArgs', 'simpleFuncWithoutArgs',
-				'simpleFuncWith5SecDelay', 'serverDestroy'
+				'simpleFuncWith10SecDelay', 'serverDestroy'
 			],
 			events: ['eventWithMyOptions', 'eventWithoutArgs', 'eventWithUnlimArgs', '10secIntervalEvent']
 		}
