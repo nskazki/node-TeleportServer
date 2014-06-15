@@ -131,10 +131,12 @@ var teleportServer = new TeleportServer({
 		debugLogger('teleportServer - bebug', bebug);
 	}).on('close', function() {
 		warnLogger('mainTest - restart TeleportServer', {
-			desc: "Перезапускаю TeleportServer."
+			desc: "Перезапускаю TeleportServer.",
+			port: 8000,
+			delay: 1000*20
 		});
 
-		initTeleportServer();
+		setTimeout(initTeleportServer, 1000*20);
 	}).on('newClientConnected', function() {
 		simpleObject
 			.emitEventWithoutArgs()
