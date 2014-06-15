@@ -60,13 +60,21 @@ SimpleObject.prototype.emitEventWithUnlimArgs = function() {
 	return this;
 };
 
-SimpleObject.prototype.simpleFuncWith10SecDelay = function(callback) {
+SimpleObject.prototype.initIntevralEvent = function() {
+	setInterval(function() {
+		this.emit('10secIntervalEvent');
+	}.bind(this), 1000 * 10);
+
+	return this;
+};
+
+SimpleObject.prototype.simpleFuncWith5SecDelay = function(callback) {
 	setTimeout(function() {
 		callback(null, {
-			name: 'simpleFuncWith10SecDelay',
+			name: 'simpleFuncWith5SecDelay',
 			internalOptions: this.options
 		});
-	}.bind(this), 1000 * 10);
+	}.bind(this), 1000 * 1);
 }
 
 SimpleObject.prototype.serverDestroy = function() {
@@ -78,10 +86,8 @@ SimpleObject.prototype.serverDestroy = function() {
 //main
 //	simpleObject
 var simpleObject = new SimpleObject({
-		foo: 'bar'
-	})
-	.emitEventWithOptions()
-	.emitEventWithoutArgs();
+	foo: 'bar'
+}).initIntevralEvent();
 
 //	end simpleObject
 
@@ -101,9 +107,9 @@ var teleportServer = new TeleportServer({
 		'simpleObject': {
 			object: simpleObject,
 			methods: ['simpleFunc', 'simpleFuncWithUnlimArgs', 'simpleFuncWithoutArgs',
-				'simpleFuncWith10SecDelay', 'serverDestroy'
+				'simpleFuncWith5SecDelay', 'serverDestroy'
 			],
-			events: ['eventWithMyOptions', 'eventWithoutArgs', 'eventWithUnlimArgs']
+			events: ['eventWithMyOptions', 'eventWithoutArgs', 'eventWithUnlimArgs', '10secIntervalEvent']
 		}
 	}
 });
