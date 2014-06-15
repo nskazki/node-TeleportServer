@@ -19,42 +19,48 @@ npm install teleport-server --save
 
 <h5>Example:</h5>
 ```js
-var teleportServer = null;
+var teleportServer = new TeleportServer({
+	objects: {
+		'logBox': {
+			object: logBox,
+			methods: ['getDateBounds', 'getLogs'],
+		},
+		'ipBox': {
+			object: ipBox,
+			events: ['newIps']
+		},
+		'blackBox': {
+			object: rainbowBox,
+			methods: ['getColor'],
+			events: ['newColor']
+		}
+	},
+	port: 8000,
+	isDebug: false
+};
 
 (function initTeleportServer() {
-	teleportServer = new TeleportServer({
-	var teleportServer = new TeleportServer({
-		objects: {
-			'logBox': {
-				object: logBox,
-				methods: ['getDateBounds', 'getLogs'],
-			},
-			'ipBox': {
-				object: ipBox,
-				events: ['newIps']
-			},
-			'blackBox': {
-				object: rainbowBox,
-				methods: ['getColor'],
-				events: ['newColor']
-			}
-		},
-		port: 8000,
-		isDebug: false
-	}).on('error', function(error) {
-		errorLogger('teleportServer - error', error);
-	}).on('warn', function(warn) {
-		warnLogger('teleportServer - warn', warn);
-	}).on('info', function(info) {
-		infoLogger('teleportServer - info', info);
-	}).on('debug', function(bebug) {
-		debugLogger('teleportServer - bebug', bebug);
-	}).on('ready', function() {
-		debugLogger('teleportServer - ready', ':)');
-	}).on('newClientConnected', function(){
-		debugLogger('teleportServer - new client connected', ':)');
-	})
-	.on('close', initTeleportServer).init();
+	teleportServer
+		.on('error', function(error) {
+			errorLogger('teleportServer - error', error);
+		}).on('warn', function(warn) {
+			warnLogger('teleportServer - warn', warn);
+		}).on('info', function(info) {
+			infoLogger('teleportServer - info', info);
+		}).on('debug', function(bebug) {
+			debugLogger('teleportServer - bebug', bebug);
+		}).on('ready', function() {
+			debugLogger('teleportServer - ready', ':)');
+		}).on('newClientConnected', function(){
+			debugLogger('teleportServer - new client connected', ':)');
+		})
+		.on('close', function() {
+			warnLogger('main - restart TeleportServer', {
+				desc: "Перезапускаю TeleportServer."
+			});
+
+			initTeleportServer();
+		}).init();
 })();
 ```
 
