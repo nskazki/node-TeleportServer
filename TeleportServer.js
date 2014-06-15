@@ -107,18 +107,22 @@ TeleportServer.prototype.destroy = function(isError) {
 		}
 
 
-		this.emit('close');
-
 		this
 			.removeAllListeners('error')
 			.removeAllListeners('warn')
 			.removeAllListeners('info')
 			.removeAllListeners('debug')
 			.removeAllListeners('ready')
-			.removeAllListeners('close')
 			.removeAllListeners('newClientConnected');
 
 		this._valueIsInit = false;
+
+		var closeListeners = this.listeners('close');
+		this.emit('close');
+
+		closeListeners.forEach(function(listener) {
+			this.removeListener('close', listener);
+		}.bind(this));
 	}
 
 	return this;
