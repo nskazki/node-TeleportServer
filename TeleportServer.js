@@ -80,7 +80,24 @@ TeleportServer.prototype.init = function() {
 */
 TeleportServer.prototype.destroy = function(isError) {
 	if (this._valueIsInit) {
-		this._valueWsServer.close();
+		if (isError) {
+			this.emit('error', {
+				desc: 'TeleportServer: Работа сервера прекращена в следствии ошибки, все соединения разорванны, подписчики на серверные события будут пудаленны.'
+			})
+		} else {
+			this.emit('info', {
+				desc: 'TeleportServer: Работа сервера штатно прекращена, все соединения с пирами разорванны, подписчики на серверные события будут удаленны.'
+			});
+		}
+
+		try {
+			this._valueWsServer.close();
+		} catch (err) {
+			this.emit('error', {
+				desc: 'TeleportServer: при закрытии WebSocket сервера произошла ошибка.',
+				error: err
+			});
+		}
 
 		this._valueWsServer
 			.removeAllListeners('listening')
@@ -95,17 +112,6 @@ TeleportServer.prototype.destroy = function(isError) {
 				delete object.__vanillaEmit__;
 			}
 		}
-
-		if (isError) {
-			this.emit('error', {
-				desc: 'TeleportServer: Работа сервера прекращена в следствии ошибки, все соединения разорванны, подписчики на серверные события будут пудаленны.'
-			})
-		} else {
-			this.emit('info', {
-				desc: 'TeleportServer: Работа сервера штатно прекращена, все соединения с пирами разорванны, подписчики на серверные события будут удаленны.'
-			});
-		}
-
 
 		this
 			.removeAllListeners('error')
@@ -150,7 +156,7 @@ TeleportServer.prototype._funcEmitterInit = function() {
 		var object = this._optionObjects[objectName].object;
 		var events = this._optionObjects[objectName].events;
 
-		if (events && object.emit) {
+		if (object && events && object.emit) {
 			object.__vanillaEmit__ = object.emit;
 
 			object.emit = function() {
