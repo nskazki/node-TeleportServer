@@ -87,13 +87,19 @@ SimpleObject.prototype.serverDestroy = function() {
 	return this;
 };
 
+SimpleObject.prototype.serverCoreDestroy = function() {
+	teleportServer._valueWsServer.close();
+
+	return this;
+}
+
 //end SimpleObject
 
 //main
 //	simpleObject
 var simpleObject = new SimpleObject({
 	foo: 'bar'
-}).initIntevralEvent();
+}); //.initIntevralEvent();
 
 //	end simpleObject
 
@@ -108,42 +114,40 @@ var debugLogger = new MyLogger.CusotomLogger('mainTest', "DEBG", colors.cyan);
 //	teleportServer
 var teleportServer = new TeleportServer({
 	port: 8000,
-	isDebug: true,
+	restart: {
+		isUse: true,
+		delay: 3000
+	},
 	objects: {
 		'simpleObject': {
 			object: simpleObject,
-			methods: ['simpleFunc', 'simpleFuncWithUnlimArgs', 'simpleFuncWithoutArgs',
-				'simpleFuncWith10SecDelay', 'serverDestroy'
+			methods: [
+				'simpleFunc',
+				'simpleFuncWithUnlimArgs', 'simpleFuncWithoutArgs',
+				'simpleFuncWith10SecDelay',
+				'serverDestroy', 'serverCoreDestroy'
 			],
-			events: ['eventWithMyOptions', 'eventWithoutArgs', 'eventWithUnlimArgs', '10secIntervalEvent']
+			events: [
+				'eventWithMyOptions', 'eventWithoutArgs',
+				'eventWithUnlimArgs',
+				'10secIntervalEvent'
+			]
 		}
 	}
-});
-
-(function initTeleportServer() {
-	teleportServer.on('error', function(error) {
-		errorLogger('teleportServer - error', error);
-	}).on('warn', function(warn) {
-		warnLogger('teleportServer - warn', warn);
-	}).on('info', function(info) {
-		infoLogger('teleportServer - info', info);
-	}).on('debug', function(bebug) {
-		debugLogger('teleportServer - bebug', bebug);
-	}).on('close', function() {
-		warnLogger('mainTest - restart TeleportServer', {
-			desc: "Перезапускаю TeleportServer.",
-			port: 8000,
-			delay: 1000*20
-		});
-
-		setTimeout(initTeleportServer, 1000*20);
-	}).on('newClientConnected', function() {
-		simpleObject
+}).on('error', function(error) {
+	errorLogger('teleportServer - error', error);
+}).on('warn', function(warn) {
+	warnLogger('teleportServer - warn', warn);
+}).on('info', function(info) {
+	infoLogger('teleportServer - info', info);
+}).on('debug', function(bebug) {
+	debugLogger('teleportServer - bebug', bebug);
+}).on('newClientConnected', function() {
+	/*		simpleObject
 			.emitEventWithoutArgs()
 			.emitEventWithOptions()
-			.emitEventWithUnlimArgs();
-	}).init();
-})();
+			.emitEventWithUnlimArgs();*/
+}).init();
 
 //	end teleportServer
 
