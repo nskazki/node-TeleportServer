@@ -26,7 +26,7 @@ npm install teleport-server --save
 ```js
 var teleportServer = new TeleportServer({
 	clientLatency: 20000,
-	autoRestarter: 3000,
+	autoRestart: 3000,
 	objects: {
 		'logBox': {
 			object: logBox,
