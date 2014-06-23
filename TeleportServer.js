@@ -59,7 +59,7 @@ util.inherits(TeleportServer, events.EventEmitter);
 	options = {
 		port: 8000,
 		clientLatency: 10000,
-		autoRestarter: 3000,
+		autoRestart: 3000,
 		objects: {
 			'simpleObject': {
 				object: simpleObject,
@@ -79,7 +79,7 @@ util.inherits(TeleportServer, events.EventEmitter);
 		если false, то сервер будет бесконечно ожидать переподключения клиента.
 		default: 10000msec
 
-	autoRestarter - параметры автоматического перезапуска веб сокет сервера в случае возникновения внутри него ошибки.
+	autoRestart - параметры автоматического перезапуска веб сокет сервера в случае возникновения внутри него ошибки.
 		если false перезапус автоматически производится не будет
 		если число, то время задержки перед перезапуском ws server
 		default: false
@@ -157,7 +157,7 @@ function TeleportServer(options) {
 	this._optionObjects = options.objects;
 
 	this._optionsClientLatency = (options.clientLatency === undefined) ? 10000 : options.clientLatency;
-	this._optionAutoRestarter = (options.autoRestarter === undefined) ? false : options.autoRestarter;
+	this._optionAutoRestart = (options.autoRestart === undefined) ? false : options.autoRestart;
 
 	//end options
 
@@ -606,14 +606,14 @@ TeleportServer.prototype._funcWsServerInit = function() {
 			error: error
 		});
 
-		if (this._optionAutoRestarter !== false) {
+		if (this._optionAutoRestart !== false) {
 			this._funcWsServerClose();
 			this.emit('close');
 		} else this._funcWsServerRestart();
 	}.bind(this));
 
 	this._valueWsServer._server.on('close', function() {
-		if (!this._optionAutoRestarter !== false) {
+		if (!this._optionAutoRestart !== false) {
 			this._funcWsServerClose();
 			this.emit('close');
 		} else this._funcWsServerRestart();
@@ -698,12 +698,12 @@ TeleportServer.prototype._funcWsServerRestart = function() {
 
 	this.emit('warn', {
 		desc: "Будет выполненн перезапуск сервера.",
-		delay: this._optionAutoRestarter,
+		delay: this._optionAutoRestart,
 	});
 
 	this._funcWsServerClose();
 
-	setTimeout(this._funcWsServerInit.bind(this), this._optionAutoRestarter);
+	setTimeout(this._funcWsServerInit.bind(this), this._optionAutoRestart);
 };
 
 TeleportServer.prototype._funcWsServerClose = function() {
