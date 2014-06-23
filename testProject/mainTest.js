@@ -14,30 +14,30 @@ function SimpleObject(options) {
 	this.options = options;
 };
 
-SimpleObject.prototype.simpleFunc = function(param, callback) {
+SimpleObject.prototype.func = function(param, callback) {
 	if (!callback) callback = param;
 
 	callback(null, {
-		name: 'simpleFunc',
+		name: 'func',
 		receivedParam: param,
 		internalOptions: this.options,
 	});
 };
 
-SimpleObject.prototype.simpleFuncWithUnlimArgs = function() {
+SimpleObject.prototype.funcWithUnlimArgs = function() {
 	var args = Array.prototype.slice.call(arguments, 0, arguments.length - 1);
 	var callback = arguments[arguments.length - 1];
 
 	callback(null, {
-		name: 'simpleFuncWithUnlimArgs',
+		name: 'funcWithUnlimArgs',
 		receivedParam: args,
 		internalOptions: this.options
 	});
 };
 
-SimpleObject.prototype.simpleFuncWithoutArgs = function(callback) {
+SimpleObject.prototype.funcWithoutArgs = function(callback) {
 	callback(null, {
-		name: 'simpleFuncWithoutArgs',
+		name: 'funcWithoutArgs',
 		internalOptions: this.options
 	});
 };
@@ -70,10 +70,10 @@ SimpleObject.prototype.initIntevralEvent = function() {
 	return this;
 };
 
-SimpleObject.prototype.simpleFuncWith10SecDelay = function(callback) {
+SimpleObject.prototype.funcWith10SecDelay = function(callback) {
 	setTimeout(function() {
 		callback(null, {
-			name: 'simpleFuncWith10SecDelay',
+			name: 'funcWith10SecDelay',
 			internalOptions: this.options
 		});
 	}.bind(this), 1000 * 10);
@@ -99,7 +99,7 @@ SimpleObject.prototype.serverCoreDestroy = function() {
 //	simpleObject
 var simpleObject = new SimpleObject({
 	foo: 'bar'
-}); //.initIntevralEvent();
+}).initIntevralEvent();
 
 //	end simpleObject
 
@@ -114,15 +114,15 @@ var debugLogger = new MyLogger.CusotomLogger('mainTest', "DEBG", colors.cyan);
 //	teleportServer
 var teleportServer = new TeleportServer({
 	port: 8000,
-	clientLatency: false,
-	autoRestarter: 3000,
+	clientLatency: 2000,
+	autoRestart: 3000,
 	objects: {
 		'simpleObject': {
 			object: simpleObject,
 			methods: [
-				'simpleFunc',
-				'simpleFuncWithUnlimArgs', 'simpleFuncWithoutArgs',
-				'simpleFuncWith10SecDelay',
+				'func',
+				'funcWithUnlimArgs', 'funcWithoutArgs',
+				'funcWith10SecDelay',
 				'serverDestroy', 'serverCoreDestroy'
 			],
 			events: [
@@ -141,10 +141,10 @@ var teleportServer = new TeleportServer({
 }).on('debug', function(bebug) {
 	debugLogger('teleportServer - bebug', bebug);
 }).on('clientConnected', function() {
-	/*		simpleObject
-			.emitEventWithoutArgs()
-			.emitEventWithOptions()
-			.emitEventWithUnlimArgs();*/
+	simpleObject
+		.emitEventWithoutArgs()
+		.emitEventWithOptions()
+		.emitEventWithUnlimArgs();
 }).init();
 
 //	end teleportServer
