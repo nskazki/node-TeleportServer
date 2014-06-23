@@ -114,10 +114,8 @@ var debugLogger = new MyLogger.CusotomLogger('mainTest', "DEBG", colors.cyan);
 //	teleportServer
 var teleportServer = new TeleportServer({
 	port: 8000,
-	restart: {
-		isUse: true,
-		delay: 3000
-	},
+	clientLatency: false,
+	autoRestarter: 3000,
 	objects: {
 		'simpleObject': {
 			object: simpleObject,
@@ -142,7 +140,7 @@ var teleportServer = new TeleportServer({
 	infoLogger('teleportServer - info', info);
 }).on('debug', function(bebug) {
 	debugLogger('teleportServer - bebug', bebug);
-}).on('newClientConnected', function() {
+}).on('clientConnected', function() {
 	/*		simpleObject
 			.emitEventWithoutArgs()
 			.emitEventWithOptions()
