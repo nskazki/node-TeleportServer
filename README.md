@@ -25,6 +25,7 @@ npm install teleport-server --save
 <h5>Example:</h5>
 ```js
 var teleportServer = new TeleportServer({
+	port: 8000,
 	clientLatency: 20000,
 	autoRestart: 3000,
 	objects: {
@@ -52,6 +53,10 @@ var teleportServer = new TeleportServer({
  * <code>errorLogger</code>,  <code>warnLogger</code>, это функции созданные функциями высшего порядка класса [MyLogger](https://github.com/nskazki/node-MyLogger).
 
 <h5>Параметры принимаемые конструктором:</h5>
+ * `port` - порт на котором core сервер будет ожидать подключений клиентов.
+ 	<br>Разрешенное значение: число.
+	<br>default: `8000`
+
  * `clientLatency` - время ожидания переподключения клиента, если это время истекает,
 	<br>то все накопленные для потерянного клиента данные очищаются.
 	<br>Разрешенные значения:
