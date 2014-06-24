@@ -99,7 +99,7 @@ SimpleObject.prototype.serverCoreDestroy = function() {
 //	simpleObject
 var simpleObject = new SimpleObject({
 	foo: 'bar'
-}).initIntevralEvent();
+})//.initIntevralEvent();
 
 //	end simpleObject
 
