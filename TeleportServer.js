@@ -77,12 +77,12 @@ util.inherits(TeleportServer, events.EventEmitter);
 		вызванными клиентом методов и выброшенные серверными объектами события) после его отключения будут очищенны.
 		если клиент успеет переподключится, то обозначенные данные он получит.
 		если false, то сервер будет бесконечно ожидать переподключения клиента.
-		default: 10000msec
+		default: 4 минуты
 
 	autoRestart - параметры автоматического перезапуска веб сокет сервера в случае возникновения внутри него ошибки.
 		если false перезапус автоматически производится не будет
 		если число, то время задержки перед перезапуском ws server
-		default: false
+		default: 10 секунд
 
 	objects - ссылки на доступные для клиентов объкты, их разрешенные асинхронные методы 
 		и разрешенные к передаче клиентам события
@@ -156,8 +156,8 @@ function TeleportServer(options) {
 	this._optionWsServerPort = options.port || 8000;
 	this._optionObjects = options.objects;
 
-	this._optionsClientLatency = (options.clientLatency === undefined) ? 10000 : options.clientLatency;
-	this._optionAutoRestart = (options.autoRestart === undefined) ? false : options.autoRestart;
+	this._optionsClientLatency = (options.clientLatency === undefined) ? (4*60*1000) : options.clientLatency;
+	this._optionAutoRestart = (options.autoRestart === undefined) ? (10*000) : options.autoRestart;
 
 	//end options
 
@@ -216,6 +216,10 @@ TeleportServer.prototype.destroy = function() {
 				delete this._optionObjects[objectName].__vanillaEmit__;
 			}
 		}
+
+		this._valueWsPeers.forEach(function(peer) {
+			if (peer) peer.destroy();
+		});
 
 		this._valueWsPeers = [];
 		this._valueIsReadyEmited = false;
@@ -457,10 +461,13 @@ TeleportServer.prototype._funcInternalHandlerGetPeerId = function(ws, message) {
 			this.emit('clientReconnectionTimeout', peerId);
 
 			var peer = this._valueWsPeers[peerId];
-			peer
-				.removeAllListeners('timeout')
-				.removeAllListeners('reconnected')
-				.destroy();
+
+			if (peer) {
+				peer
+					.removeAllListeners('timeout')
+					.removeAllListeners('reconnected')
+					.destroy();
+			}
 
 			//признак того, что клиента здесь больше нет :)
 			//нужен для того чтобы отбить корректной ошибкой его запоздалую попытку переподключиться
@@ -582,6 +589,7 @@ function createResultMessage(message, error, result) {
 	return {
 		type: "internalCallback",
 		internalCommand: message.internalCommand,
+		internalRequestId: message.internalRequestId,
 		error: error,
 		result: result,
 	};
@@ -876,6 +884,7 @@ function Peer(ws, timestamp, peerId, timeoutDelay) {
 	this.timestamp = timestamp;
 	this.peerId = peerId;
 	this.timeoutDelay = timeoutDelay;
+	this.timeoutId = null;
 };
 
 Peer.prototype.init = function() {
@@ -898,13 +907,22 @@ Peer.prototype.destroy = function() {
 
 	this.timestamp = null;
 	this.peerId = null;
-	this.timeoutDelay = null;
+
+	if (this.timeoutId) {
+		clearTimeout(this.timeoutId);
+		this.timeoutId = null;
+	}
 
 	return this;
 };
 
 Peer.prototype.replaceSocket = function(ws) {
 	this.socket.removeAllListeners('close');
+
+	if (this.timeoutId) {
+		clearTimeout(this.timeoutId);
+		this.timeoutId = null;
+	}
 
 	this.socket = ws;
 	this._funcSocketSetOnCloseListeners();
@@ -916,7 +934,9 @@ Peer.prototype._funcSocketSetOnCloseListeners = function() {
 	this.socket.on('close', function() {
 		this.emit('clientDisconnected', this.peerId);
 
-		if (this.timeoutDelay !== false) setTimeout(this._funcSocketStateCheker.bind(this), this.timeoutDelay);
+		if (this.timeoutDelay !== false) {
+			this.timeoutId = setTimeout(this._funcSocketStateCheker.bind(this), this.timeoutDelay);
+		}
 	}.bind(this));
 }
 
