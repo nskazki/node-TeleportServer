@@ -157,7 +157,7 @@ function TeleportServer(options) {
 	this._optionObjects = options.objects;
 
 	this._optionsClientLatency = (options.clientLatency === undefined) ? (4*60*1000) : options.clientLatency;
-	this._optionAutoRestart = (options.autoRestart === undefined) ? (10*000) : options.autoRestart;
+	this._optionAutoRestart = (options.autoRestart === undefined) ? (10*1000) : options.autoRestart;
 
 	//end options
 
