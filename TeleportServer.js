@@ -165,7 +165,7 @@ function TeleportServer(options) {
 	this._valueWsServer = null;
 	this._valueWsPeers = [];
 
-	this._valueTimestamp = new Date();
+	this._valueTimestamp = null;
 
 	this._valueIsInit = false;
 	this._valueIsReadyEmited = false;
@@ -182,6 +182,7 @@ function TeleportServer(options) {
 */
 TeleportServer.prototype.init = function() {
 	if (!this._valueIsInit) {
+		this._valueTimestamp = new Date();
 		this._funcWsServerInit();
 		this._funcEmitterInit();
 
@@ -216,6 +217,9 @@ TeleportServer.prototype.destroy = function() {
 			}
 		}
 
+		this._valueWsPeers = [];
+		this._valueIsReadyEmited = false;
+		this._valueTimestamp = null;
 		this._valueIsInit = false;
 
 		if (this._valueWsServer) {
@@ -458,7 +462,9 @@ TeleportServer.prototype._funcInternalHandlerGetPeerId = function(ws, message) {
 				.removeAllListeners('reconnected')
 				.destroy();
 
-			delete this._valueWsPeers[peerId];
+			//признак того, что клиента здесь больше нет :)
+			//нужен для того чтобы отбить корректной ошибкой его запоздалую попытку переподключиться
+			this._valueWsPeers[peerId] = false;
 		}.bind(this))
 		.on('clientDisconnected', function(peerId) {
 			this.emit('debug', {
@@ -477,7 +483,7 @@ TeleportServer.prototype._funcInternalHandlerGetPeerId = function(ws, message) {
 	this._funcWsSend(ws, result);
 
 	this.emit('debug', {
-		desc: 'TeleportServer: Отправил клиенту peerId, отныне отвечать пиру буду через метод _funcPeerSend',
+		desc: 'TeleportServer: Отправил клиенту peerId.',
 		peerId: peerId
 	});
 };
@@ -487,9 +493,20 @@ TeleportServer.prototype._funcInternalHandlerSetPeerId = function(ws, message) {
 	var timestamp = message.args.timestamp;
 
 	var peer = this._valueWsPeers[peerId];
-	if (!peer) {
+	if (peer === false) {
 		var errorInfo = {
-			desc: "TeleportServer: Клиента с таким peerId никогда не существовало, или истекло время ожидания его переподключения.",
+			desc: "TeleportServer: Истекло время ожидания вашего переподключения.",
+			type: "timeout",
+			peerId: peerId,
+			peerTimestamp: timestamp
+		};
+
+		this._funcWsSend(ws, createResultMessage(message, errorInfo));
+		this.emit('warn', errorInfo);
+	} else if (!peer) {
+		var errorInfo = {
+			desc: "TeleportServer: Клиента с таким peerId никогда не существовало.",
+			type: "notfound",
 			peerId: peerId,
 			peerTimestamp: timestamp
 		};
@@ -512,9 +529,8 @@ TeleportServer.prototype._funcInternalHandlerSetPeerId = function(ws, message) {
 		this._funcWsSend(ws, result);
 
 		this.emit('debug', {
-			desc: "TeleportServer: Принял от клиента ранее выданный ему peerId, отныне отвечать пиру " +
-				"буду через метод _funcPeerSend, также этот пир получит все имеющиеся для него " +
-				"калбеки неготовые на момент разрыва соединения.",
+			desc: "TeleportServer: Принял от клиента ранее выданный ему peerId, " +
+				"этот пир получит все имеющиеся для него калбеки неготовые на момент разрыва соединения.",
 			peerId: peerId,
 			peerTimestamp: timestamp
 		});
@@ -533,7 +549,7 @@ TeleportServer.prototype._funcInternalHandlerGetObjects = function(ws, message) 
 	}
 
 	var result = createResultMessage(message, null, resultObjects);
-	this._funcPeerSend(peerId, result);
+	this._funcWsSend(ws, result);
 
 	this.emit('debug', {
 		desc: 'TeleportServer: Подключившийся клиент запросил свойства серверных объектов',
