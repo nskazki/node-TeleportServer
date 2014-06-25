@@ -778,7 +778,7 @@ TeleportServer.prototype._funcWsSend = function(ws, message) {
 			JSON.stringify(message),
 			wsSendedCreate(message).bind(this));
 	} else {
-		var string = (JSON.stringify(message).length > 400) ? (string.substring(0, 400) + "...") : message;
+		var string = (JSON.stringify(message).length > 400) ? (JSON.stringify(message).substring(0, 400) + "...") : message;
 		this.emit("debug", {
 			desc: "TeleportServer: Сообщение приру отправлено не будет так как соединение с ним закрылось.",
 			toSend: string
@@ -816,7 +816,7 @@ TeleportServer.prototype._funcPeerSend = function(peerId, message) {
 	var peer = this._valueWsPeers[peerId];
 
 	if (!peer) {
-		var string = (JSON.stringify(message).length > 400) ? (string.substring(0, 400) + "...") : message;
+		var string = (JSON.stringify(message).length > 400) ? (JSON.stringify(message).substring(0, 400) + "...") : message;
 
 		this.emit('warn', {
 			desc: "TeleportServer: Сообщение пиру отправлено не будет, потому что пира с таким peerId не существует, " +
@@ -827,7 +827,7 @@ TeleportServer.prototype._funcPeerSend = function(peerId, message) {
 	} else if (peer.socket.readyState == peer.socket.OPEN) {
 		this._funcWsSend(peer.socket, message);
 	} else {
-		var string = (JSON.stringify(message).length > 400) ? (string.substring(0, 400) + "...") : message;
+		var string = (JSON.stringify(message).length > 400) ? (JSON.stringify(message).substring(0, 400) + "...") : message;
 
 		this.emit('debug', {
 			desc: "TeleportServer: Пир отключился, сообщение будет отправленно, когда он сново подключится.",
