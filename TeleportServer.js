@@ -156,8 +156,8 @@ function TeleportServer(options) {
 	this._optionWsServerPort = options.port || 8000;
 	this._optionObjects = options.objects;
 
-	this._optionsClientLatency = (options.clientLatency === undefined) ? (4*60*1000) : options.clientLatency;
-	this._optionAutoRestart = (options.autoRestart === undefined) ? (10*1000) : options.autoRestart;
+	this._optionsClientLatency = (options.clientLatency === undefined) ? (4 * 60 * 1000) : options.clientLatency;
+	this._optionAutoRestart = (options.autoRestart === undefined) ? (10 * 1000) : options.autoRestart;
 
 	//end options
 
@@ -788,10 +788,12 @@ TeleportServer.prototype._funcWsSend = function(ws, message) {
 	function wsSendedCreate(toSend) {
 		return function(error) {
 			if (error) {
+				var string = (JSON.stringify(toSend).length > 400) ? (JSON.stringify(toSend).substring(0, 400) + "...") : toSend;
+
 				this.emit('warn', {
 					desc: "TeleportServer: Во время отправки сообщения пиру произошла ошибка.",
 					error: error,
-					toSend: toSend
+					toSend: string
 				});
 			} else {
 				this.emit('debug', {
