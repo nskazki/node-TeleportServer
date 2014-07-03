@@ -35,7 +35,7 @@
 "use strict";
 
 //require
-var WebSocketServer = require('ws').Server;
+var WebSocketServer = require('socket.io');
 var util = require('util');
 var events = require('events');
 var _ = require('underscore');
@@ -620,30 +620,43 @@ function createResultMessage(message, error, result) {
 	
 */
 TeleportServer.prototype._funcWsServerInit = function() {
-	this._valueWsServer = new WebSocketServer({
-		port: this._optionWsServerPort
-	});
+	this._valueWsServer = new WebSocketServer(this._optionWsServerPort);
 
-	this._valueWsServer.on('error', function(error) {
+
+	//onerror
+	var onerror = (function(error) {
 		this.emit("error", {
 			desc: "TeleportServer: Web Socket сервер выбросил ошибку.",
 			error: error
 		});
 
-		if (this._optionAutoRestart !== false) {
+		if (this._optionAutoRestart == false) {
 			this._funcWsServerClose();
 			this.emit('close');
 		} else this._funcWsServerRestart();
-	}.bind(this));
+	});
 
-	this._valueWsServer._server.on('close', function() {
-		if (!this._optionAutoRestart !== false) {
+	this._valueWsServer.sockets.on('error', onerror.bind(this));
+	this._valueWsServer.httpServer.on('error', onerror.bind(this));
+
+	//onclose
+	var onclose = (function() {
+		this.emit("info", {
+			desc: "TeleportServer: Web Socket был закрыт.",
+		});
+
+		if (this._optionAutoRestart == false) {
 			this._funcWsServerClose();
 			this.emit('close');
 		} else this._funcWsServerRestart();
-	}.bind(this));
+	});
 
-	this._valueWsServer.on('connection', function(ws) {
+	this._valueWsServer.sockets.on('close', onclose.bind(this));
+	this._valueWsServer.httpServer.on('close', onclose.bind(this));
+
+
+	//onconnection
+	this._valueWsServer.sockets.on('connection', function(ws) {
 		ws
 			.on('message', this._funcWsOnMessageCreate(ws).bind(this))
 			.on('error', function(err) {
@@ -651,10 +664,15 @@ TeleportServer.prototype._funcWsServerInit = function() {
 					desc: "TeleportServer: Произошла ошибка соединения с пиром",
 					error: err
 				});
+			}.bind(this))
+			.on('disconnect', function() {
+				this.emit('debug', {
+					desc: "TeleportServer: Отключился один из пиров"
+				});
 			}.bind(this));
 	}.bind(this));
 
-	this._valueWsServer.on('listening', function() {
+	this._valueWsServer.httpServer.on('listening', function() {
 		this.emit('info', {
 			desc: "TeleportServer: Ws Server - запущен",
 			port: this._optionWsServerPort
@@ -731,16 +749,16 @@ TeleportServer.prototype._funcWsServerRestart = function() {
 };
 
 TeleportServer.prototype._funcWsServerClose = function() {
-	this._valueWsServer
-		.removeAllListeners('listening')
-		.removeAllListeners('error')
-		.removeAllListeners('connection');
-
 	try {
-		this._valueWsServer._server
-			.removeAllListeners('close');
-
 		this._valueWsServer.close();
+
+		this._valueWsServer.eio.close();
+		this._valueWsServer.engine.close();
+		this._valueWsServer.httpServer.close();
+		
+		this._valueWsServer.sockets.sockets.forEach(function(ws) {
+			ws.disconnect();
+		});
 	} catch (err) {}
 
 	this._valueWsServer = null;
@@ -773,7 +791,7 @@ TeleportServer.prototype._funcPeerSendBroadcast = function(message) {
 
 */
 TeleportServer.prototype._funcWsSend = function(ws, message) {
-	if (ws.readyState == ws.OPEN) { //["CONNECTING", "OPEN", "CLOSING", "CLOSED"]
+	if (ws.connected) { //["CONNECTING", "OPEN", "CLOSING", "CLOSED"]
 		ws.send(
 			JSON.stringify(message),
 			wsSendedCreate(message).bind(this));
@@ -826,7 +844,7 @@ TeleportServer.prototype._funcPeerSend = function(peerId, message) {
 			peerId: peerId,
 			message: string
 		});
-	} else if (peer.socket.readyState == peer.socket.OPEN) {
+	} else if (peer.socket.connected) {
 		this._funcWsSend(peer.socket, message);
 	} else {
 		var string = (JSON.stringify(message).length > 400) ? (JSON.stringify(message).substring(0, 400) + "...") : message;
@@ -904,7 +922,7 @@ Peer.prototype.destroy = function() {
 	/*console.log('destroy');
 	console.log(this.socket._myTime);
 */
-	this.socket.removeAllListeners('close');
+	this.socket.removeAllListeners('disconnect');
 	this.socket = null;
 
 	this.timestamp = null;
@@ -919,7 +937,7 @@ Peer.prototype.destroy = function() {
 };
 
 Peer.prototype.replaceSocket = function(ws) {
-	this.socket.removeAllListeners('close');
+	this.socket.removeAllListeners('disconnect');
 
 	if (this.timeoutId) {
 		clearTimeout(this.timeoutId);
@@ -933,15 +951,19 @@ Peer.prototype.replaceSocket = function(ws) {
 };
 
 Peer.prototype._funcSocketSetOnCloseListeners = function() {
-	this.socket.on('close', function() {
+	var onDisconnect = (function() {
+		this.socket.removeListener('disconnect', onDisconnect);
 		this.emit('clientDisconnected', this.peerId);
+
 
 		if (this.timeoutDelay !== false) {
 			this.timeoutId = setTimeout(this._funcSocketStateCheker.bind(this), this.timeoutDelay);
 		}
 	}.bind(this));
+
+	this.socket.on('disconnect', onDisconnect);
 }
 
 Peer.prototype._funcSocketStateCheker = function() {
-	if (this.socket.readyState != this.socket.OPEN) this.emit('timeout', this.peerId);
+	if (!this.socket.connected) this.emit('timeout', this.peerId);
 };

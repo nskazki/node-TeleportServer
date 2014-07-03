@@ -65,7 +65,7 @@ SimpleObject.prototype.emitEventWithUnlimArgs = function() {
 SimpleObject.prototype.initIntevralEvent = function() {
 	setInterval(function() {
 		this.emit('10secIntervalEvent');
-	}.bind(this), 1000 * 10);
+	}.bind(this), 1000 );//* 10);
 
 	return this;
 };
@@ -88,7 +88,7 @@ SimpleObject.prototype.serverDestroy = function() {
 };
 
 SimpleObject.prototype.serverCoreDestroy = function() {
-	teleportServer._valueWsServer.close();
+	teleportServer._funcWsServerClose();
 
 	return this;
 }

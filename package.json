@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/nskazki/node-TeleportServer",
   "dependencies": {
+    "socket.io": "^1.0.6",
     "underscore": "^1.6.0",
     "ws": "^0.4.31"
   },
