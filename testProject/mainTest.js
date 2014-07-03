@@ -114,8 +114,8 @@ var debugLogger = new MyLogger.CusotomLogger('mainTest', "DEBG", colors.cyan);
 //	teleportServer
 var teleportServer = new TeleportServer({
 	port: 8000,
-	clientLatency: 20000,
-	autoRestart: 3000,
+	clientLatency: false,
+	autoRestart: false,
 	objects: {
 		'simpleObject': {
 			object: simpleObject,

@@ -218,7 +218,10 @@ TeleportServer.prototype.destroy = function() {
 		}
 
 		this._valueWsPeers.forEach(function(peer) {
-			if (peer) peer.destroy();
+			if (peer) {
+				peer.destroy();
+				peer.removeAllListeners();
+			}
 		});
 
 		this._valueWsPeers = [];
@@ -749,17 +752,10 @@ TeleportServer.prototype._funcWsServerRestart = function() {
 };
 
 TeleportServer.prototype._funcWsServerClose = function() {
-	try {
-		this._valueWsServer.close();
+	this._valueWsServer.sockets.removeAllListeners();
+	this._valueWsServer.httpServer.removeAllListeners();
 
-		this._valueWsServer.eio.close();
-		this._valueWsServer.engine.close();
-		this._valueWsServer.httpServer.close();
-		
-		this._valueWsServer.sockets.sockets.forEach(function(ws) {
-			ws.disconnect();
-		});
-	} catch (err) {}
+	this._valueWsServer.close();
 
 	this._valueWsServer = null;
 };
@@ -908,21 +904,13 @@ function Peer(ws, timestamp, peerId, timeoutDelay) {
 };
 
 Peer.prototype.init = function() {
-	/*this.socket._myTime = new Date();
-
-	console.log('init');
-	console.log(this.socket._myTime);
-*/
 	this._funcSocketSetOnCloseListeners();
 
 	return this;
 };
 
 Peer.prototype.destroy = function() {
-	/*console.log('destroy');
-	console.log(this.socket._myTime);
-*/
-	this.socket.removeAllListeners('disconnect');
+	this.socket.removeAllListeners();
 	this.socket = null;
 
 	this.timestamp = null;
