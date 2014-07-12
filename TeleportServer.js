@@ -35,7 +35,7 @@
 "use strict";
 
 //require
-var WebSocketServer = require('ws').Server;
+var WebSocketServer = require('socket.io');
 var util = require('util');
 var events = require('events');
 var _ = require('underscore');
@@ -152,9 +152,11 @@ util.inherits(TeleportServer, events.EventEmitter);
 	
 */
 function TeleportServer(options) {
+	options = options || {};
+
 	//options
 	this._optionWsServerPort = options.port || 8000;
-	this._optionObjects = options.objects;
+	this._optionObjects = options.objects || {};
 
 	this._optionsClientLatency = (options.clientLatency === undefined) ? (4 * 60 * 1000) : options.clientLatency;
 	this._optionAutoRestart = (options.autoRestart === undefined) ? (10 * 1000) : options.autoRestart;
@@ -201,7 +203,11 @@ TeleportServer.prototype.init = function() {
 	И в конце ставить флаг "не инициализирован" this._valueIsInit = false
 
 */
+
 TeleportServer.prototype.destroy = function() {
+	throw new Error('DISABLED, because #close method dont work in socket.io server ');
+
+	/*
 	if (this._valueIsInit) {
 		this.emit('info', {
 			desc: 'TeleportServer: Работа сервера штатно прекращена, все соединения с пирами разорванны, ' +
@@ -232,9 +238,12 @@ TeleportServer.prototype.destroy = function() {
 		}
 
 		this.emit('destroyed');
+
+		
 	}
 
 	return this;
+	*/
 }
 
 //emitter
@@ -464,8 +473,7 @@ TeleportServer.prototype._funcInternalHandlerGetPeerId = function(ws, message) {
 
 			if (peer) {
 				peer
-					.removeAllListeners('timeout')
-					.removeAllListeners('reconnected')
+					.removeAllListeners()
 					.destroy();
 			}
 
@@ -620,30 +628,52 @@ function createResultMessage(message, error, result) {
 	
 */
 TeleportServer.prototype._funcWsServerInit = function() {
-	this._valueWsServer = new WebSocketServer({
-		port: this._optionWsServerPort
-	});
+	this._valueWsServer = new WebSocketServer(this._optionWsServerPort);
 
-	this._valueWsServer.on('error', function(error) {
+	//onerror
+	var onerror = (function(error) {
 		this.emit("error", {
 			desc: "TeleportServer: Web Socket сервер выбросил ошибку.",
 			error: error
 		});
 
+		/*
+		DISABLED, because #close method dont work in socket.io server 
 		if (this._optionAutoRestart == false) {
 			this._funcWsServerClose();
 			this.emit('close');
 		} else this._funcWsServerRestart();
-	}.bind(this));
+		*/
+	});
 
-	this._valueWsServer._server.on('close', function() {
+	this._valueWsServer.on('error', onerror.bind(this));
+	this._valueWsServer.sockets.on('error', onerror.bind(this));
+	
+	//onclose
+	var onclose = (function() {
+		this.emit("info", {
+			desc: "TeleportServer: Web Socket был закрыт.",
+		});
+
+		/*
+		DISABLED, because #close method dont work in socket.io server 
+		
 		if (this._optionAutoRestart == false) {
 			this._funcWsServerClose();
 			this.emit('close');
 		} else this._funcWsServerRestart();
-	}.bind(this));
+		*/
 
-	this._valueWsServer.on('connection', function(ws) {
+		//temporary solution
+		this.emit('close');
+		//
+	});
+
+	this._valueWsServer.on('close', onclose.bind(this));
+	this._valueWsServer.sockets.on('close', onclose.bind(this));
+	
+	//onconnection
+	this._valueWsServer.sockets.on('connection', function(ws) {
 		ws
 			.on('message', this._funcWsOnMessageCreate(ws).bind(this))
 			.on('error', function(err) {
@@ -651,10 +681,18 @@ TeleportServer.prototype._funcWsServerInit = function() {
 					desc: "TeleportServer: Произошла ошибка соединения с пиром",
 					error: err
 				});
+			}.bind(this))
+			.on('disconnect', function() {
+				this.emit('debug', {
+					desc: "TeleportServer: Отключился один из пиров"
+				});
 			}.bind(this));
 	}.bind(this));
 
-	this._valueWsServer.on('listening', function() {
+	/*
+	DISABLED, because socket.io can not notify about server starts.
+	
+	this._valueWsServer.httpServer.on('listening', function() {
 		this.emit('info', {
 			desc: "TeleportServer: Ws Server - запущен",
 			port: this._optionWsServerPort
@@ -667,6 +705,16 @@ TeleportServer.prototype._funcWsServerInit = function() {
 			this.emit('restarted');
 		}
 	}.bind(this));
+	*/
+
+	//temporary solution
+	this.emit('info', {
+		desc: "TeleportServer: Ws Server - запущен",
+		port: this._optionWsServerPort
+	});
+	this.emit('ready');
+	this._valueIsReadyEmited = true;
+	//
 };
 
 /**
@@ -717,7 +765,10 @@ TeleportServer.prototype._funcWsOnMessageCreate = function(ws) {
  	и по таймауту запускает его инициализацию.
 
  */
+
 TeleportServer.prototype._funcWsServerRestart = function() {
+	throw new Error('DISABLED, because #close method dont work in socket.io server ');
+	/*
 	this.emit('restarting');
 
 	this.emit('warn', {
@@ -728,9 +779,13 @@ TeleportServer.prototype._funcWsServerRestart = function() {
 	this._funcWsServerClose();
 
 	setTimeout(this._funcWsServerInit.bind(this), this._optionAutoRestart);
+	*/
 };
 
 TeleportServer.prototype._funcWsServerClose = function() {
+	throw new Error('DISABLED, because #close method dont work in socket.io server ');
+
+	/*
 	this._valueWsServer
 		.removeAllListeners('listening')
 		.removeAllListeners('error')
@@ -744,7 +799,9 @@ TeleportServer.prototype._funcWsServerClose = function() {
 	} catch (err) {}
 
 	this._valueWsServer = null;
+	*/
 };
+
 
 /**
 	Метод для рассылки сообщения всем клиентам, принимает message произвольного формата.
@@ -773,7 +830,7 @@ TeleportServer.prototype._funcPeerSendBroadcast = function(message) {
 
 */
 TeleportServer.prototype._funcWsSend = function(ws, message) {
-	if (ws.readyState == ws.OPEN) { //["CONNECTING", "OPEN", "CLOSING", "CLOSED"]
+	if (ws.connected) {
 		ws.send(
 			JSON.stringify(message),
 			wsSendedCreate(message).bind(this));
@@ -925,7 +982,7 @@ Peer.prototype.replaceSocket = function(ws) {
 };
 
 Peer.prototype._funcSocketSetOnCloseListeners = function() {
-	this.socket.on('close', function() {
+	this.socket.on('disconnect', function() {
 		this.emit('clientDisconnected', this.peerId);
 
 		if (this.timeoutDelay !== false) {
