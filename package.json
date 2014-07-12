@@ -4,7 +4,7 @@
   "description": "rpc server",
   "main": "TeleportServer.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "./node_modules/.bin/mocha -R spec"
   },
   "repository": {
     "type": "git",
@@ -17,12 +17,13 @@
   },
   "homepage": "https://github.com/nskazki/node-TeleportServer",
   "dependencies": {
-    "socket.io": "^1.0.6",
-    "underscore": "^1.6.0",
-    "ws": "^0.4.31"
+    "lodash": "^2.4.1",
+    "pattern-matching": "^0.1.5",
+    "socket.io": "^1.0.6"
   },
   "devDependencies": {
-    "mocha": "^1.20.1"
+    "mocha": "^1.20.1",
+    "teleport-client": "^0.4.0"
   },
   "keywords": [
     "RPC"
