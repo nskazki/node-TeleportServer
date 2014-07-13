@@ -1,5 +1,6 @@
 var assert = require('assert');
 var TeleportServer = require('..');
+var patternMatching = require('pattern-matching');
 
 try {
 	var TeleportClient = require('../../TeleportClient/');
@@ -256,22 +257,407 @@ describe('create server', function() {
 });
 
 describe('server handles incomming message', function() {
-	var teleportServer, ws, onMessage;
+	var teleportServer, ws, onMessage, timestamp, peerId;
 
 	before(function() {
-		teleportServer = createTeleportServer(port);
+		teleportServer = createTeleportServer(port).init();
 		ws = new WsMock();
 		onMessage = teleportServer._funcWsOnMessageCreate(ws).bind(teleportServer);
+		timestamp = new Date();
 	});
 
-	it('some responce', function(done) {
-		ws
-			.once('okSend', done)
-			.once('errorSend', done);
+	describe('#_funcWsOnMessageCreate - incorrect messages', function() {
+		it('not valid JSON message', function(done) {
+			ws.once('okSend', function(empty, message) {
+				if (patternMatching(message, {
+					error: 'notEmpty'
+				})) done();
+				else done(util.inspect(message));
+			});
 
-		onMessage('{}')
+			onMessage('{')
+		});
+
+		it('message type (string)', function(done) {
+			ws.once('okSend', function(empty, message) {
+				if (patternMatching(message, {
+					error: 'notEmpty'
+				})) done();
+				else done(util.inspect(message));
+			});
+
+			onMessage('"test"')
+		});
+
+		it('message (object) without type (field)', function(done) {
+			ws.once('okSend', function(empty, message) {
+				if (patternMatching(message, {
+					error: 'notEmpty'
+				})) done();
+				else done(util.inspect(message));
+			});
+
+			onMessage('{}')
+		});
+
+		it('message (object) with wrong type (field)', function(done) {
+			ws.once('okSend', function(empty, message) {
+				if (patternMatching(message, {
+					error: 'notEmpty'
+				})) done();
+				else done(util.inspect(message));
+			});
+
+			onMessage('{"type":"someType"}');
+		});
 	});
 
+	describe('#_funcWsOnMessageCreate - internalCommand', function() {
+		it('incorrect internalCommand', function(done) {
+			ws.once('okSend', function(empty, message) {
+				if (patternMatching(message, {
+					error: 'notEmpty'
+				})) done();
+				else done(util.inspect(message));
+			});
+
+			onMessage(JSON.stringify({
+				type: 'internalCommand'
+			}));
+		});
+
+		it('getTimestamp', function() {
+			ws.once('okSend', function(empty, message) {
+				assert.deepEqual(message, {
+					type: 'internalCallback',
+					internalCommand: 'getTimestamp',
+					error: null,
+					result: teleportServer._valueTimestamp.toJSON()
+				});
+			});
+
+			onMessage(JSON.stringify({
+				type: 'internalCommand',
+				internalCommand: 'getTimestamp'
+			}));
+		});
+
+		describe('getPeerId', function() {
+
+			it('with incorrect timestamp', function(done) {
+				ws.once('okSend', function(empty, message) {
+					if (patternMatching(message, {
+						error: 'notEmpty'
+					})) done();
+					else done(util.inspect(message));
+				});
+
+				onMessage(JSON.stringify({
+					type: 'internalCommand',
+					internalCommand: 'getPeerId'
+				}));
+			});
+
+			it('with correct timestamp', function() {
+				ws.once('okSend', function(empty, message) {
+					assert.deepEqual(message, {
+						type: 'internalCallback',
+						internalCommand: 'getPeerId',
+						error: null,
+						result: 0
+					});
+
+					peerId = message.result;
+				});
+
+				onMessage(JSON.stringify({
+					type: 'internalCommand',
+					internalCommand: 'getPeerId',
+					args: {
+						timestamp: timestamp
+					}
+				}));
+			});
+		});
+
+		describe('getObjects', function() {
+			it('incorrect - wrong peerId', function(done) {
+				ws.once('okSend', function(empty, message) {
+					if (patternMatching(message, {
+						error: 'notEmpty'
+					})) done();
+					else done(util.inspect(message));
+				});
+
+				onMessage(JSON.stringify({
+					type: 'internalCommand',
+					internalCommand: 'getObjects',
+				}));
+			});
+
+			it('correct', function(done) {
+				ws.once('okSend', function(empty, message) {
+					if (patternMatching(message, {
+						result: 'notEmpty'
+					})) done();
+					else done(util.inspect(message));
+				});
+
+				onMessage(JSON.stringify({
+					type: 'internalCommand',
+					internalCommand: 'getObjects',
+					args: {
+						peerId: peerId
+					}
+				}));
+			});
+		});
+
+		describe('connectionСompleted', function() {
+			it('incorrect - wrong peerId', function(done) {
+				ws.once('okSend', function(empty, message) {
+					if (patternMatching(message, {
+						error: 'notEmpty'
+					})) done();
+					else done(util.inspect(message));
+				});
+
+				onMessage(JSON.stringify({
+					type: 'internalCommand',
+					internalCommand: 'connectionСompleted',
+					args: {
+						peerId: 2
+					}
+				}));
+			})
+
+			it('correct', function(done) {
+				teleportServer.once('clientConnected', function() {
+					done();
+				});
+
+				onMessage(JSON.stringify({
+					type: 'internalCommand',
+					internalCommand: 'connectionСompleted',
+					args: {
+						peerId: peerId
+					}
+				}));
+			});
+
+			it('incorrect - already connected', function(done) {
+				ws.once('okSend', function(empty, message) {
+					if (patternMatching(message, {
+						error: 'notEmpty'
+					})) done();
+					else done(util.inspect(message));
+				});
+
+				onMessage(JSON.stringify({
+					type: 'internalCommand',
+					internalCommand: 'connectionСompleted',
+					args: {
+						peerId: peerId
+					}
+				}));
+			})
+		})
+
+		describe('setPeerId', function() {
+			it('incorrect - without timestamp', function(done) {
+				ws.once('okSend', function(empty, message) {
+					if (patternMatching(message, {
+						error: 'notEmpty'
+					})) done();
+					else done(util.inspect(message));
+				});
+
+				onMessage(JSON.stringify({
+					type: 'internalCommand',
+					internalCommand: 'setPeerId',
+					args: {
+						peerId: peerId
+					}
+				}));
+			});
+
+			it('incorrect - without peerId', function(done) {
+				ws.once('okSend', function(empty, message) {
+					if (patternMatching(message, {
+						error: 'notEmpty'
+					})) done();
+					else done(util.inspect(message));
+				});
+
+				onMessage(JSON.stringify({
+					type: 'internalCommand',
+					internalCommand: 'setPeerId',
+					args: {
+						timestamp: timestamp
+					}
+				}));
+			});
+
+			it('incorrect - peer not disconnected', function(done) {
+				ws.once('okSend', function(empty, message) {
+					if (patternMatching(message, {
+						error: 'notEmpty'
+					})) done();
+					else done(util.inspect(message));
+				});
+
+				onMessage(JSON.stringify({
+					type: 'internalCommand',
+					internalCommand: 'setPeerId',
+					args: {
+						timestamp: timestamp,
+						peerId: peerId
+					}
+				}));
+			});
+
+			describe('after disconnected', function() {
+				beforeEach(function() {
+					ws.connected = false;
+					ws.emit('disconnect');
+					ws = new WsMock();
+					onMessage = teleportServer._funcWsOnMessageCreate(ws).bind(teleportServer);
+				});
+
+				it('incorrect - wrong peerId', function(done) {
+					ws.once('okSend', function(empty, message) {
+						if (patternMatching(message, {
+							error: 'notEmpty'
+						})) done();
+						else done(util.inspect(message));
+					});
+
+					onMessage(JSON.stringify({
+						type: 'internalCommand',
+						internalCommand: 'setPeerId',
+						args: {
+							timestamp: timestamp,
+							peerId: 1
+						}
+					}));
+				});
+
+				it('incorrect - wrong timestamp', function(done) {
+					ws.once('okSend', function(empty, message) {
+						if (patternMatching(message, {
+							error: 'notEmpty'
+						})) done();
+						else done(util.inspect(message));
+					});
+
+					onMessage(JSON.stringify({
+						type: 'internalCommand',
+						internalCommand: 'setPeerId',
+						args: {
+							timestamp: new Date(),
+							peerId: peerId
+						}
+					}));
+				});
+
+				it('correct', function() {
+					ws.once('okSend', function(empty, message) {
+						assert.deepEqual(message, {
+							type: 'internalCallback',
+							internalCommand: 'setPeerId'
+						});
+					});
+
+					onMessage(JSON.stringify({
+						type: 'internalCommand',
+						internalCommand: 'setPeerId',
+						args: {
+							timestamp: timestamp,
+							peerId: peerId
+						}
+					}));
+				});
+			});
+		});
+
+		describe('reconnectionCompleted', function() {
+			it('reconnectionCompleted - correct', function(done) {
+				teleportServer.once('clientReconnected', function(_peerId) {
+					if (peerId === _peerId) done();
+					else done(new Error('wrong peerId reconnected'));
+				});
+
+				onMessage(JSON.stringify({
+					type: 'internalCommand',
+					internalCommand: 'reconnectionCompleted',
+					args: {
+						peerId: peerId
+					}
+				}));
+			});
+
+			it('reconnectionCompleted - incorrect, already reconnected', function(done) {
+				ws.once('okSend', function(empty, message) {
+					if (patternMatching(message, {
+						error: 'notEmpty'
+					})) done();
+					else done(util.inspect(message));
+				});
+
+				onMessage(JSON.stringify({
+					type: 'internalCommand',
+					internalCommand: 'reconnectionCompleted',
+					args: {
+						peerId: peerId
+					}
+				}));
+			});
+		});
+
+		describe('disconnect', function() {
+			it('incorrect reconnect - timeout', function(done) {
+				var count = [];
+
+				teleportServer.once('clientDisconnected', function() {
+					count.push('clientDisconnected');
+				});
+
+				teleportServer.once('clientReconnectionTimeout', function() {
+					count.push('clientReconnectionTimeout');
+				});
+
+				ws.connected = false;
+				ws.emit('disconnect');
+				ws = new WsMock();
+				onMessage = teleportServer._funcWsOnMessageCreate(ws).bind(teleportServer);
+
+				ws.once('okSend', function(empty, message) {
+					if (patternMatching(message, {
+						error: 'notEmpty'
+					})) count.push('error - reconnected');
+					else done(util.inspect(message) + '\n' + util.inspect(count));
+
+					if (count.length === 3) done();
+					else done(
+						util.inspect(count)
+					);
+
+				});
+
+				setTimeout(function() {
+					onMessage(JSON.stringify({
+						type: 'internalCommand',
+						internalCommand: 'setPeerId',
+						args: {
+							timestamp: timestamp,
+							peerId: peerId
+						}
+					}));
+				}, 200);
+			});
+		})
+
+	});
 });
 
 describe('client-server handshake', function() {
@@ -313,7 +699,7 @@ function createTeleportServer(port) {
 				events: ['simpleEvent']
 			}
 		},
-		clientLatency: 20 * 1000,
+		clientLatency: 100,
 		autoRestart: 10 * 1000
 	}).on('error', function(error) {
 		console.log('teleportServer - error', error);
@@ -338,6 +724,8 @@ function WsMock(state) {
 };
 
 WsMock.prototype.send = function(message, callback) {
+	message = JSON.parse(message);
+
 	if (this.connected) {
 		this.emit('okSend', null, message);
 		return callback();
