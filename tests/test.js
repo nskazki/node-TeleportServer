@@ -1,12 +1,12 @@
 var SocketsController = require('../libs/SocketsController');
 var PeersController = require('../libs/PeersController');
+var ObjectsController = require('../libs/ObjectsController');
 
 var assert = require('assert');
 
 var WebSocketServerMock = require('./WebSocketServerMock');
 var WsMock = require('./WsMock');
 var Socket = require('socket.io-client');
-
 
 var util = require('util');
 var events = require('events');
@@ -310,6 +310,59 @@ describe('PeersController', function() {
 		});
 	});
 
+	it('~needPeerSend, while peer disconnected', function(done) {
+		var socketsController = new SocketsController(port);
+		var peersController = new PeersController();
+		var objectsController = new events.EventEmitter();
+
+		var clientTimestamp = new Date().valueOf();
+
+		socketsController.up(peersController);
+		peersController.down(socketsController).up(objectsController);
+
+		var socket = new Socket('http://localhost:' + port);
+		socket.send({
+			type: 'internalCommand',
+			internalCommand: 'connect',
+			args: {
+				clientTimestamp: clientTimestamp
+			}
+		});
+
+		var count = [];
+
+		peersController.on('peerConnection', function(id) {
+			socketClose(socket);
+		});
+
+		peersController.on('peerDisconnect', function(id) {
+			objectsController.emit('needPeerSend', id, 'hello :)');
+
+			var socket = new Socket('ws://localhost:' + port, {
+				forceNew: true
+			});
+
+			socket.send({
+				type: 'internalCommand',
+				internalCommand: 'reconnect',
+				args: {
+					clientTimestamp: clientTimestamp,
+					peerId: id
+				}
+			});
+
+			socket.on('message', function() {
+				count.push('message');
+				if (count.length == 3) done();
+			})
+		});
+
+		peersController.on('peerReconnect', function() {
+			count.push('peerReconnect');
+			if (count.length == 3) done();
+		});
+	});
+
 	it('~needPeersBroadcastSend', function(done) {
 		var socketsController = new SocketsController(port);
 		var peersController = new PeersController();
@@ -336,6 +389,8 @@ describe('PeersController', function() {
 		})
 	});
 
+
+
 	it('!peerDisconnect', function(done) {
 		var socketsController = new SocketsController(port);
 		var peersController = new PeersController().down(socketsController);
@@ -359,3 +414,67 @@ describe('PeersController', function() {
 		})
 	});
 });
+
+describe('ObjectsController', function() {
+	beforeEach(function() {
+		port++;
+	});
+
+	it('#new', function() {
+		var objectsController = new ObjectsController({
+			'blank': {
+				object: new ClassWithFuncAndEvents(),
+				methods: ['simpleFunc'],
+				events: ['simpleEvent']
+			}
+		});
+	});
+
+	it('command', function(done) {
+		var objectsController = new ObjectsController({
+			'blank': {
+				object: new ClassWithFuncAndEvents(),
+				methods: ['simpleFunc'],
+				events: ['simpleEvent']
+			}
+		});
+		var socketsController = new SocketsController(port);
+		var peersController = new PeersController();
+
+		socketsController.up(peersController);
+		peersController.down(socketsController).up(objectsController);
+		objectsController.down(peersController);
+
+		var socket = new Socket('http://localhost:' + port);
+		socket.send({
+			type: 'internalCommand',
+			internalCommand: 'connect',
+			args: {
+				clientTimestamp: new Date().valueOf()
+			}
+		});
+
+		socket.send({
+			type: 'command',
+			object: 'blank',
+			command: 'simpleFunc',
+			args: ['some arg'],
+			requestId: 0
+		});
+
+		var count = 0;;
+		socket.on('message', function() {
+			count++;
+			if (count == 2) done();
+		});
+	});
+})
+
+//
+util.inherits(ClassWithFuncAndEvents, events.EventEmitter);
+
+function ClassWithFuncAndEvents() {}
+
+ClassWithFuncAndEvents.prototype.simpleFunc = function(arg, callback) {
+	callback(null, arg);
+};

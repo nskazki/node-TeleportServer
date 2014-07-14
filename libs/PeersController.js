@@ -10,6 +10,7 @@
 		peerDisconnectedTimeout
 
 		needSocketSend
+		needObjectsSend
 
 	Listenings:
 	
@@ -68,27 +69,45 @@ PeersController.prototype._initAsyncEmit = function() {
 PeersController.prototype._selfBind = function() {
 	this.on('peerDisconnect', function(peerId) {
 		var peer = this._peerList[peerId];
+
+		delete this._socketToPeerMap[peer._socketId];
 		peer.disconnect();
+	}.bind(this));
+
+	this.on('needPeerSend', this._onNeedPeerSend.bind(this));
+
+	this.on('peerReconnect', function(peerId) {
+		var peer = this._peerList[peerId];
+
+		while (peer._messageQueue.length) {
+			var message = peer._messageQueue.shift();
+			this.emit('needPeerSend', peerId, message);
+		}
 	}.bind(this));
 };
 
-PeersController.prototype.up = function(objectsController) {
-	objectsController.on('needPeerSend', function(peerId, message) {
-		var peer = this._peerList[peerId];
-		if (!peer) return logger.warn('peers, id: %s - ~needPeerSend, peer not found, message: ', peerId, message);
+PeersController.prototype._onNeedPeerSend = function(peerId, message) {
+	var peer = this._peerList[peerId];
+	if (!peer) return logger.warn('peers, id: %s - ~needPeerSend, peer not found, message: ', peerId, message);
 
+	if (peer._socketId) {
 		logger.debug('peers, id: %s - ~needPeerSend, message: ', peerId, message);
 		this.emit('needSocketSend', peer._socketId, message);
-	}.bind(this));
+	} else {
+		logger.debug('peers, id: %s - ~needPeerSend - send it later, message: ', peerId, message);
+		peer._messageQueue.push(message);
+	}
+};
+
+PeersController.prototype.up = function(objectsController) {
+	objectsController.on('needPeerSend', this._onNeedPeerSend.bind(this));
 
 	objectsController.on('needPeersBroadcastSend', function(message) {
 		logger.debug('peers, id: all - ~needPeersBroadcastSend, message: ', message);
 
 		for (var peerId in this._peerList) {
 			if (this._peerList.hasOwnProperty(peerId)) {
-				var peer = this._peerList[peerId];
-
-				this.emit('needSocketSend', peer._socketId, message);
+				this.emit('needPeerSend', peerId, message);
 			}
 		}
 	}.bind(this));
@@ -113,8 +132,6 @@ PeersController.prototype.down = function(socketsController) {
 	socketsController.on('socketDisconnect', function(socketId) {
 		if (this._findPeer(socketId)) {
 			var peerId = this._findPeerId(socketId);
-
-			delete this._socketToPeerMap[socketId];
 
 			logger.debug('peers, id: %s - !peerDisconnect.', peerId);
 			this.emit('peerDisconnect', peerId);
@@ -165,6 +182,7 @@ PeersController.prototype._peerConnect = function(socketId, message) {
 	// objectsController listenings ~peerConnection and emitted
 	// !needPeerSend with objects props
 
+	this.emit('needObjectsSend', peerId);
 	this.emit('peerConnection', peerId);
 }
 
@@ -208,6 +226,7 @@ function Peer(socketId, peerId, clientTimestamp, peerDisconnectedTimeout) {
 	this._clientTimestamp = clientTimestamp;
 	this._peerDisconnectedTimeout = peerDisconnectedTimeout;
 	this._timeoutId = null;
+	this._messageQueue = [];
 }
 
 Peer.prototype.disconnect = function() {
@@ -246,6 +265,7 @@ Peer.prototype.destroy = function() {
 		this._timeoutId = null;
 	}
 
+	this._messageQueue.length = 0;
 	this._peerId = null;
 	this._socketId = null;
 	this._clientTimestamp = null;
