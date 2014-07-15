@@ -44,15 +44,49 @@ function ObjectsController(objects) {
 
 	this._objects = objects;
 	this._objectsProps = this._formatObjectsProps(objects);
+	this._eventsSubscription(objects);
+}
+
+ObjectsController.prototype._eventsSubscription = function(_objects) {
+	for (var objectName in _objects) {
+		if (_objects.hasOwnProperty(objectName) && _objects[objectName].events) {
+
+			_objects[objectName].events.forEach(function(eventName) {
+
+				_objects[objectName].object.on(
+					eventName,
+					createEventListener(objectName, eventName).bind(this)
+				);
+
+			}.bind(this));
+		}
+	}
+
+	function createEventListener(objectName, eventName) {
+		return function() {
+			logger.debug('objects, peerId: all, !needPeersBroadcastSend. objectName: %s, eventName: %s.',
+				objectName, eventName);
+
+			var args = Array.prototype.slice.call(arguments);
+
+			this.emit('needPeersBroadcastSend', {
+				type: 'event',
+				objectName: objectName,
+				eventName: eventName,
+				args: args
+			});
+		}
+	}
 }
 
 ObjectsController.prototype._formatObjectsProps = function(_objects) {
 	var resultObjects = {};
 	for (var objectName in _objects) {
-		resultObjects[objectName] = {
-			methods: _objects[objectName].methods,
-			events: _objects[objectName].events
-		}
+		if (_objects.hasOwnProperty(objectName))
+			resultObjects[objectName] = {
+				methods: _objects[objectName].methods,
+				events: _objects[objectName].events
+			}
 	}
 
 	return resultObjects;
@@ -68,6 +102,8 @@ ObjectsController.prototype.down = function(peersController) {
 	}.bind(this));
 
 	peersController.on('needObjectsSend', function(peerId) {
+		logger.debug('object, peerId: %s - ~needObjectsSend.', peerId);
+
 		this.emit('needPeerSend', peerId, {
 			type: 'internalCallback',
 			internalCommand: 'connect',
@@ -80,25 +116,25 @@ ObjectsController.prototype.down = function(peersController) {
 }
 
 ObjectsController.prototype._callCommand = function(peerId, message) {
-	if (this._objectsProps[message.object] &&
-		(this._objectsProps[message.object].methods.indexOf(message.command) != -1)) {
+	if (this._objectsProps[message.objectName] &&
+		(this._objectsProps[message.objectName].methods.indexOf(message.methodName) != -1)) {
 
-		logger.debug('object, peerId: %s, #_callCommand, message: ', peerId, message);
+		logger.debug('object, peerId: %s - #_callCommand, message: ', peerId, message);
 
 		var callback = commandCallbackCreate(peerId, message).bind(this);
 		var args = message.args;
 		args.push(callback);
 
-		var object = this._objects[message.object].object;
-		object[message.command].apply(object, args);
+		var object = this._objects[message.objectName].object;
+		object[message.methodName].apply(object, args);
 	}
 
 	function commandCallbackCreate(peerId, message) {
 		return function(error, result) {
 			var resultToSend = {
-				object: message.object,
+				objectName: message.objectName,
 				type: "callback",
-				command: message.command,
+				methodName: message.methodName,
 				requestId: message.requestId,
 				error: error,
 				result: result
@@ -148,10 +184,10 @@ jjv.addSchema('command', {
 			type: 'string',
 			'enum': ['command']
 		},
-		command: {
+		methodName: {
 			type: 'string'
 		},
-		object: {
+		objectName: {
 			type: 'string'
 		},
 		args: {
@@ -161,7 +197,7 @@ jjv.addSchema('command', {
 			type: 'number'
 		}
 	},
-	required: ['type', 'command', 'object', 'args', 'requestId']
+	required: ['type', 'methodName', 'objectName', 'args', 'requestId']
 });
 
 jjv.test = function(schema, object) {
