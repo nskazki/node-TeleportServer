@@ -1,6 +1,7 @@
 var SocketsController = require('../libs/SocketsController');
 var PeersController = require('../libs/PeersController');
 var ObjectsController = require('../libs/ObjectsController');
+var TeleportServer = require('..');
 
 var Socket = require('socket.io-client');
 
@@ -171,7 +172,7 @@ describe('PeersController', function() {
 		});
 
 		peersController.on('peerConnection', function(id) {
-			assert.equal(id,0);
+			assert.equal(id, 0);
 
 			done();
 		});
@@ -179,7 +180,7 @@ describe('PeersController', function() {
 
 	it('!peerDisconnectedTimeout', function(done) {
 		var socketsController = new SocketsController(port);
-		var peersController = new PeersController().down(socketsController);
+		var peersController = new PeersController(100).down(socketsController);
 		var socket = new Socket('ws://localhost:' + port);
 
 		socket.send({
@@ -191,13 +192,13 @@ describe('PeersController', function() {
 		});
 
 		peersController.on('peerConnection', function(id) {
-			assert.equal(id,0);
+			assert.equal(id, 0);
 
 			socketClose(socket);
 		});
 
 		peersController.on('peerDisconnectedTimeout', function(id) {
-			assert.equal(id,0);
+			assert.equal(id, 0);
 
 			done();
 		});
@@ -205,7 +206,7 @@ describe('PeersController', function() {
 
 	it('!peerDisconnectedTimeout && fail reconnect atempt', function(done) {
 		var socketsController = new SocketsController(port);
-		var peersController = new PeersController().down(socketsController);
+		var peersController = new PeersController(200).down(socketsController);
 		socketsController.up(peersController);
 
 		var socket = new Socket('ws://localhost:' + port);
@@ -220,13 +221,13 @@ describe('PeersController', function() {
 		});
 
 		peersController.on('peerConnection', function(id) {
-			assert.equal(id,0);
+			assert.equal(id, 0);
 
 			socketClose(socket);
 		});
 
 		peersController.on('peerDisconnectedTimeout', function(id) {
-			assert.equal(id,0);
+			assert.equal(id, 0);
 
 			var socket = new Socket('ws://localhost:' + port, {
 				forceNew: true
@@ -265,7 +266,7 @@ describe('PeersController', function() {
 		});
 
 		peersController.on('peerConnection', function(id) {
-			assert.equal(id,0);
+			assert.equal(id, 0);
 
 			socket.on('message', function(message) {
 				if (message == 'hello') done();
@@ -277,7 +278,7 @@ describe('PeersController', function() {
 
 	it('!peerReconnect', function(done) {
 		var socketsController = new SocketsController(port);
-		var peersController = new PeersController().down(socketsController);
+		var peersController = new PeersController(500).down(socketsController);
 		socketsController.up(peersController);
 
 		var socket = new Socket('ws://localhost:' + port);
@@ -294,13 +295,13 @@ describe('PeersController', function() {
 		var count = [];
 
 		peersController.on('peerConnection', function(id) {
-			assert.equal(id,0);
+			assert.equal(id, 0);
 
 			socketClose(socket);
 		});
 
 		peersController.on('peerDisconnect', function(id) {
-			assert.equal(id,0);
+			assert.equal(id, 0);
 
 			var socket = new Socket('ws://localhost:' + port, {
 				forceNew: true
@@ -338,7 +339,7 @@ describe('PeersController', function() {
 
 	it('~needPeerSend, while peer disconnected', function(done) {
 		var socketsController = new SocketsController(port);
-		var peersController = new PeersController();
+		var peersController = new PeersController(500);
 		var objectsController = new events.EventEmitter();
 
 		var clientTimestamp = new Date().valueOf();
@@ -430,7 +431,7 @@ describe('PeersController', function() {
 
 
 
-	it('!peerDisconnect', function(done) {
+	it.skip('!peerDisconnect', function(done) {
 		var socketsController = new SocketsController(port);
 		var peersController = new PeersController().down(socketsController);
 		var socket = new Socket('ws://localhost:' + port);
@@ -601,6 +602,312 @@ describe('ObjectsController', function() {
 		});
 	});
 })
+
+describe('TeleportServer', function() {
+	beforeEach(function() {
+		port++;
+	});
+
+	it('#new', function() {
+		var objWithFuncAndEvents = new ClassWithFuncAndEvents();
+
+		var teleportServer = new TeleportServer({
+			port: port,
+			peerDisconnectedTimeout: 500,
+			objects: {
+				'blank': {
+					object: objWithFuncAndEvents,
+					methods: ['simpleFunc'],
+					events: ['simpleEvent']
+				}
+			}
+		})
+	});
+
+	it('!serverReady', function(done) {
+		var objWithFuncAndEvents = new ClassWithFuncAndEvents();
+
+		var teleportServer = new TeleportServer({
+			port: port,
+			peerDisconnectedTimeout: 500,
+			objects: {
+				'blank': {
+					object: objWithFuncAndEvents,
+					methods: ['simpleFunc'],
+					events: ['simpleEvent']
+				}
+			}
+		}).on('serverReady', done);
+	});
+
+	it('!peerConnection', function(done) {
+		var objWithFuncAndEvents = new ClassWithFuncAndEvents();
+
+		var teleportServer = new TeleportServer({
+			port: port,
+			peerDisconnectedTimeout: 500,
+			objects: {
+				'blank': {
+					object: objWithFuncAndEvents,
+					methods: ['simpleFunc'],
+					events: ['simpleEvent']
+				}
+			}
+		}).on('peerConnection', function(id) {
+			assert.equal(id, 0);
+			done();
+		});
+
+		var socket = new Socket('http://localhost:' + port);
+		socket.send({
+			type: 'internalCommand',
+			internalCommand: 'connect',
+			args: {
+				clientTimestamp: new Date().valueOf()
+			}
+		});
+	})
+
+	it.skip('!peerDisconnect', function(done) {
+		var objWithFuncAndEvents = new ClassWithFuncAndEvents();
+
+		var teleportServer = new TeleportServer({
+			port: port,
+			peerDisconnectedTimeout: 500,
+			objects: {
+				'blank': {
+					object: objWithFuncAndEvents,
+					methods: ['simpleFunc'],
+					events: ['simpleEvent']
+				}
+			}
+		}).on('peerDisconnect', function(id) {
+			assert.equal(id, 0);
+			done();
+		});
+
+		var socket = new Socket('http://localhost:' + port);
+		socket.send({
+			type: 'internalCommand',
+			internalCommand: 'connect',
+			args: {
+				clientTimestamp: new Date().valueOf()
+			}
+		});
+
+		socket.on('message', function(message) {
+			socketClose(socket);
+		})
+	})
+
+
+	it('!peerDisconnectedTimeout', function(done) {
+		var objWithFuncAndEvents = new ClassWithFuncAndEvents();
+
+		var teleportServer = new TeleportServer({
+			port: port,
+			peerDisconnectedTimeout: 50,
+			objects: {
+				'blank': {
+					object: objWithFuncAndEvents,
+					methods: ['simpleFunc'],
+					events: ['simpleEvent']
+				}
+			}
+		}).on('peerDisconnectedTimeout', function(id) {
+			assert.equal(id, 0);
+			done();
+		});
+
+		var socket = new Socket('http://localhost:' + port);
+		socket.send({
+			type: 'internalCommand',
+			internalCommand: 'connect',
+			args: {
+				clientTimestamp: new Date().valueOf()
+			}
+		});
+
+		socket.on('message', function(message) {
+			socketClose(socket);
+		})
+	})
+
+	it('!peerReconnect', function(done) {
+		var objWithFuncAndEvents = new ClassWithFuncAndEvents();
+		var clientTimestamp = new Date().valueOf();
+
+		var teleportServer = new TeleportServer({
+			port: port,
+			peerDisconnectedTimeout: 50,
+			objects: {
+				'blank': {
+					object: objWithFuncAndEvents,
+					methods: ['simpleFunc'],
+					events: ['simpleEvent']
+				}
+			}
+		}).on('peerDisconnect', function(id) {
+
+			var socket = new Socket('http://localhost:' + port, {
+				forceNew: true
+			});
+
+			socket.send({
+				type: 'internalCommand',
+				internalCommand: 'reconnect',
+				args: {
+					clientTimestamp: clientTimestamp,
+					peerId: id
+				}
+			})
+		}).on('peerReconnect', function(id) {
+			assert.equal(id, 0);
+			done();
+		});
+
+		var socket = new Socket('http://localhost:' + port);
+		socket.send({
+			type: 'internalCommand',
+			internalCommand: 'connect',
+			args: {
+				clientTimestamp: clientTimestamp
+			}
+		});
+
+		socket.on('message', function(message) {
+			socketClose(socket);
+		})
+	})
+
+	it('call command after !peerReconnect', function(done) {
+		var objWithFuncAndEvents = new ClassWithFuncAndEvents();
+		var clientTimestamp = new Date().valueOf();
+
+		var teleportServer = new TeleportServer({
+			port: port,
+			peerDisconnectedTimeout: 50,
+			objects: {
+				'blank': {
+					object: objWithFuncAndEvents,
+					methods: ['simpleFunc'],
+					events: ['simpleEvent']
+				}
+			}
+		}).on('peerConnection', function() {
+			socketClose(socket);
+		}).on('peerDisconnect', function(id) {
+
+			socket = new Socket('http://localhost:' + port, {
+				forceNew: true
+			});
+
+			socket.send({
+				type: 'internalCommand',
+				internalCommand: 'reconnect',
+				args: {
+					clientTimestamp: clientTimestamp,
+					peerId: id
+				}
+			})
+		}).on('peerReconnect', function(id) {
+			socket.send({
+				type: 'command',
+				objectName: 'blank',
+				methodName: 'simpleFunc',
+				requestId: 0,
+				args: ['nyan']
+			});
+
+			var messageCount = 0;
+			socket.on('message', function(message) {
+				messageCount++;
+
+				if (messageCount == 2) {
+					assert.deepEqual(message, {
+						type: 'callback',
+						objectName: 'blank',
+						methodName: 'simpleFunc',
+						requestId: 0,
+						error: null,
+						result: 'nyan'
+					});
+					done();
+				}
+			})
+		});
+
+		var socket = new Socket('http://localhost:' + port);
+		socket.send({
+			type: 'internalCommand',
+			internalCommand: 'connect',
+			args: {
+				clientTimestamp: clientTimestamp
+			}
+		});
+	})
+
+	it('emit event after !peerReconnect', function(done) {
+		var objWithFuncAndEvents = new ClassWithFuncAndEvents();
+		var clientTimestamp = new Date().valueOf();
+
+		var teleportServer = new TeleportServer({
+			port: port,
+			peerDisconnectedTimeout: 50,
+			objects: {
+				'blank': {
+					object: objWithFuncAndEvents,
+					methods: ['simpleFunc'],
+					events: ['simpleEvent']
+				}
+			}
+		}).on('peerConnection', function() {
+			socketClose(socket);
+		}).on('peerDisconnect', function(id) {
+
+			socket = new Socket('http://localhost:' + port, {
+				forceNew: true
+			});
+
+			socket.send({
+				type: 'internalCommand',
+				internalCommand: 'reconnect',
+				args: {
+					clientTimestamp: clientTimestamp,
+					peerId: id
+				}
+			})
+		}).on('peerReconnect', function(id) {
+			objWithFuncAndEvents.emit('simpleEvent', 'hello')
+
+			var messageCount = 0;
+			socket.on('message', function(message) {
+				messageCount++;
+
+				if (messageCount == 2) {
+					assert.deepEqual(message, {
+						type: 'event',
+						objectName: 'blank',
+						eventName: 'simpleEvent',
+						args: ['hello']
+					});
+					done();
+				}
+			})
+		});
+
+		var socket = new Socket('http://localhost:' + port);
+		socket.send({
+			type: 'internalCommand',
+			internalCommand: 'connect',
+			args: {
+				clientTimestamp: clientTimestamp
+			}
+		});
+	})
+
+
+});
 
 //
 util.inherits(ClassWithFuncAndEvents, events.EventEmitter);
