@@ -7,7 +7,7 @@
 
 		socketConnection
 		socketMessage
-		socketDisconnect
+		socketDisconnection
 		socketError
 
 	Listenings:
@@ -108,11 +108,11 @@ SocketsController.prototype._init = function(_httpServer) {
 		})
 
 		ws.on('disconnect', function() {
-			debug('ws, id: %s - !socketDisconnect', socketId);
+			debug('ws, id: %s - !socketDisconnection', socketId);
 
 			ws.removeAllListeners();
 			delete this._wsList[socketId];
-			this.emit('socketDisconnect', socketId);
+			this.emit('socketDisconnection', socketId);
 		}.bind(this));
 
 	}.bind(this));

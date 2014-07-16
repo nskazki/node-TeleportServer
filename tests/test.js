@@ -93,7 +93,7 @@ describe('SocketsController', function() {
 		});
 	});
 
-	it('!socketDisconnect', function(done) {
+	it('!socketDisconnection', function(done) {
 		var socketsController = new SocketsController(port);
 		var socket = new Socket('http://localhost:' + port);
 
@@ -103,7 +103,7 @@ describe('SocketsController', function() {
 			});
 		});
 
-		socketsController.on('socketDisconnect', function(id) {
+		socketsController.on('socketDisconnection', function(id) {
 			socketClose(socket);
 			socketsController.destroy();
 
@@ -111,7 +111,7 @@ describe('SocketsController', function() {
 		});
 	});
 
-	it('!socketDisconnect x2', function(done) {
+	it('!socketDisconnection x2', function(done) {
 		var socketsController = new SocketsController(port);
 
 		socketsController.on('serverReady', function() {
@@ -130,7 +130,7 @@ describe('SocketsController', function() {
 
 		});
 
-		socketsController.on('socketDisconnect', function(id) {
+		socketsController.on('socketDisconnection', function(id) {
 			socketsController.destroy();
 
 			done();
@@ -248,7 +248,7 @@ describe('PeersController', function() {
 		});
 	});
 
-	it('!peerDisconnectedTimeout && fail reconnect atempt', function(done) {
+	it('!peerDisconnectedTimeout && get new peerId', function(done) {
 		var socketsController = new SocketsController(port);
 		var peersController = new PeersController(200).down(socketsController);
 		socketsController.up(peersController);
@@ -287,13 +287,20 @@ describe('PeersController', function() {
 			});
 
 			socket.on('message', function(message) {
-				if (message.error) {
-					socketClose(socket);
-					peersController.destroy();
-					socketsController.destroy();
+				assert.deepEqual(message, {
+					type: 'internalCallback',
+					internalCommand: 'reconnect',
+					error: null,
+					result: {
+						newPeerId: 1
+					}
+				});
 
-					done();
-				}
+				socketClose(socket);
+				peersController.destroy();
+				socketsController.destroy();
+
+				done();
 			})
 		});
 	});
@@ -332,7 +339,7 @@ describe('PeersController', function() {
 		})
 	});
 
-	it('!peerReconnect', function(done) {
+	it('!peerReconnection', function(done) {
 		var socketsController = new SocketsController(port);
 		var peersController = new PeersController(500).down(socketsController);
 		socketsController.up(peersController);
@@ -356,7 +363,7 @@ describe('PeersController', function() {
 			socketClose(socket);
 		});
 
-		peersController.on('peerDisconnect', function(id) {
+		peersController.on('peerDisconnection', function(id) {
 			assert.equal(id, 0);
 
 			var socket = new Socket('ws://localhost:' + port, {
@@ -391,10 +398,10 @@ describe('PeersController', function() {
 			})
 		});
 
-		peersController.on('peerReconnect', function(id) {
+		peersController.on('peerReconnection', function(id) {
 			assert.equal(id, 0);
 
-			count.push('peerReconnect');
+			count.push('peerReconnection');
 		});
 	});
 
@@ -425,7 +432,7 @@ describe('PeersController', function() {
 			socketClose(socket);
 		});
 
-		peersController.on('peerDisconnect', function(id) {
+		peersController.on('peerDisconnection', function(id) {
 			assert.equal(id, 0);
 
 			objectsController.emit('needPeerSend', id, 'hello :)');
@@ -459,10 +466,10 @@ describe('PeersController', function() {
 			})
 		});
 
-		peersController.on('peerReconnect', function(id) {
+		peersController.on('peerReconnection', function(id) {
 			assert.equal(id, 0);
 
-			count.push('peerReconnect');
+			count.push('peerReconnection');
 		});
 	});
 
@@ -502,7 +509,7 @@ describe('PeersController', function() {
 
 
 
-	it('!peerDisconnect', function(done) {
+	it('!peerDisconnection', function(done) {
 		var socketsController = new SocketsController(port);
 		var peersController = new PeersController().down(socketsController);
 		var socket = new Socket('ws://localhost:' + port);
@@ -521,7 +528,7 @@ describe('PeersController', function() {
 			assert.equal(peerId, 0);
 			socketClose(socket);
 		});
-		peersController.on('peerDisconnect', function(peerId) {
+		peersController.on('peerDisconnection', function(peerId) {
 			assert.equal(peerId, 0);
 
 			socketClose(socket);
@@ -578,9 +585,12 @@ describe('ObjectsController', function() {
 				internalCommand: "connect",
 				error: null,
 				result: {
-					blank: {
-						methods: ['simpleFunc'],
-						events: ['simpleEvent']
+					peerId: 0,
+					objectsProps: {
+						blank: {
+							methods: ['simpleFunc'],
+							events: ['simpleEvent']
+						}
 					}
 				}
 			}, message);
@@ -770,7 +780,7 @@ describe('TeleportServer', function() {
 		});
 	})
 
-	it('!peerDisconnect', function(done) {
+	it('!peerDisconnection', function(done) {
 		var objWithFuncAndEvents = new ClassWithFuncAndEvents();
 
 		var teleportServer = new TeleportServer({
@@ -783,7 +793,7 @@ describe('TeleportServer', function() {
 					events: ['simpleEvent']
 				}
 			}
-		}).on('peerDisconnect', function(id) {
+		}).on('peerDisconnection', function(id) {
 			assert.equal(id, 0);
 			teleportServer.destroy();
 
@@ -839,7 +849,7 @@ describe('TeleportServer', function() {
 		})
 	})
 
-	it('!peerReconnect', function(done) {
+	it('!peerReconnection', function(done) {
 		var objWithFuncAndEvents = new ClassWithFuncAndEvents();
 		var clientTimestamp = new Date().valueOf();
 
@@ -853,7 +863,7 @@ describe('TeleportServer', function() {
 					events: ['simpleEvent']
 				}
 			}
-		}).on('peerDisconnect', function(id) {
+		}).on('peerDisconnection', function(id) {
 
 			var socket = new Socket('http://localhost:' + port, {
 				forceNew: true
@@ -867,7 +877,7 @@ describe('TeleportServer', function() {
 					peerId: id
 				}
 			})
-		}).on('peerReconnect', function(id) {
+		}).on('peerReconnection', function(id) {
 			assert.equal(id, 0);
 			socketClose(socket);
 			teleportServer.destroy();
@@ -889,7 +899,7 @@ describe('TeleportServer', function() {
 		})
 	})
 
-	it('call command after !peerReconnect', function(done) {
+	it('call command after !peerReconnection', function(done) {
 		var objWithFuncAndEvents = new ClassWithFuncAndEvents();
 		var clientTimestamp = new Date().valueOf();
 
@@ -905,7 +915,7 @@ describe('TeleportServer', function() {
 			}
 		}).on('peerConnection', function() {
 			socketClose(socket);
-		}).on('peerDisconnect', function(id) {
+		}).on('peerDisconnection', function(id) {
 
 			socket = new Socket('http://localhost:' + port, {
 				forceNew: true
@@ -919,7 +929,7 @@ describe('TeleportServer', function() {
 					peerId: id
 				}
 			})
-		}).on('peerReconnect', function(id) {
+		}).on('peerReconnection', function(id) {
 			socket.send({
 				type: 'command',
 				objectName: 'blank',
@@ -960,7 +970,7 @@ describe('TeleportServer', function() {
 		});
 	})
 
-	it('emit event after !peerReconnect', function(done) {
+	it('emit event after !peerReconnection', function(done) {
 		var objWithFuncAndEvents = new ClassWithFuncAndEvents();
 		var clientTimestamp = new Date().valueOf();
 
@@ -976,7 +986,7 @@ describe('TeleportServer', function() {
 			}
 		}).on('peerConnection', function() {
 			socketClose(socket);
-		}).on('peerDisconnect', function(id) {
+		}).on('peerDisconnection', function(id) {
 
 			socket = new Socket('http://localhost:' + port, {
 				forceNew: true
@@ -990,7 +1000,7 @@ describe('TeleportServer', function() {
 					peerId: id
 				}
 			})
-		}).on('peerReconnect', function(id) {
+		}).on('peerReconnection', function(id) {
 			objWithFuncAndEvents.emit('simpleEvent', 'hello')
 
 			var messageCount = 0;

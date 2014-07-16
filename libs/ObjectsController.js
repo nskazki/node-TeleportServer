@@ -134,7 +134,10 @@ ObjectsController.prototype.down = function(peersController) {
 			type: 'internalCallback',
 			internalCommand: 'connect',
 			error: null,
-			result: this._objectsProps
+			result: {
+				peerId: peerId,
+				objectsProps: this._objectsProps
+			}
 		});
 	}.bind(this));
 

@@ -17,9 +17,9 @@
 		serverError
 		serverDestroyed
 
-		peerReconnect
-		peerDisconnect
-		peerConnection
+		peerReconnection
+		peerDisconnection
+		peerConnectionion
 		peerDisconnectedTimeout
 */
 
@@ -70,24 +70,32 @@ function TeleportServer(params) {
 	this._peersController.down(this._socketsController).up(this._objectsController);
 	this._objectsController.down(this._peersController);
 
+	this._isInit = true;
+
 	this._initAsyncEmit();
 	this._bindOnControllersEvents();
 }
 
 TeleportServer.prototype.destroy = function() {
-	this._objectsController.destroy();
-	this._socketsController.destroy(); //-> serverDestroyed
-	this._peersController.destroy();
+	if (this._isInit === true) {
+		this._isInit = false;
 
-	this.on('serverDestroyed', function() {
-		this._objectsController.removeAllListeners();
-		this._socketsController.removeAllListeners();
-		this._peersController.removeAllListeners();
+		this._objectsController.destroy();
+		this._socketsController.destroy(); //-> serverDestroyed
+		this._peersController.destroy();
 
-		this._objectsController = null;
-		this._socketsController = null;
-		this._peersController = null;
-	}.bind(this));
+		this.on('serverDestroyed', function() {
+			this._objectsController.removeAllListeners();
+			this._socketsController.removeAllListeners();
+			this._peersController.removeAllListeners();
+
+			this._objectsController = null;
+			this._socketsController = null;
+			this._peersController = null;
+		}.bind(this));
+	}
+
+	return this;
 };
 
 TeleportServer.prototype._initAsyncEmit = function() {
@@ -103,7 +111,7 @@ TeleportServer.prototype._initAsyncEmit = function() {
 
 TeleportServer.prototype._bindOnControllersEvents = function() {
 	this._createEvetnsProxy(
-		this._peersController, ['peerReconnect', 'peerDisconnect', 'peerConnection', 'peerDisconnectedTimeout']
+		this._peersController, ['peerReconnection', 'peerDisconnection', 'peerConnection', 'peerDisconnectedTimeout']
 	);
 
 	this._createEvetnsProxy(
