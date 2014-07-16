@@ -37,7 +37,9 @@ describe('SocketsController', function() {
 	it('#new - server emited ready', function(done) {
 		var socketsController = new SocketsController(port);
 
-		socketsController.on('serverReady', done);
+		socketsController.on('serverReady', function() {
+			done();
+		});
 		socketsController.on('serverError', done);
 	});
 
@@ -66,6 +68,9 @@ describe('SocketsController', function() {
 		var socket = new Socket('http://localhost:' + port);
 
 		socketsController.on('socketConnection', function(id) {
+			socketClose(socket);
+			socketsController.destroy();
+
 			done();
 		});
 	});
@@ -81,21 +86,27 @@ describe('SocketsController', function() {
 
 		socketsController.on('socketMessage', function(id, message) {
 			assert.deepEqual(message, messageToSend);
+			socketClose(socket);
+			socketsController.destroy();
+
 			done();
 		});
 	});
 
 	it('!socketDisconnect', function(done) {
 		var socketsController = new SocketsController(port);
+		var socket = new Socket('http://localhost:' + port);
 
 		socketsController.on('serverReady', function() {
-			var socket = new Socket('http://localhost:' + port);
 			socket.on('connect', function() {
 				socket.disconnect();
 			});
 		});
 
 		socketsController.on('socketDisconnect', function(id) {
+			socketClose(socket);
+			socketsController.destroy();
+
 			done();
 		});
 	});
@@ -120,6 +131,8 @@ describe('SocketsController', function() {
 		});
 
 		socketsController.on('socketDisconnect', function(id) {
+			socketsController.destroy();
+
 			done();
 		});
 	});
@@ -134,6 +147,8 @@ describe('SocketsController', function() {
 		socketsController.on('socketConnection', function(id) {
 			socket.on('message', function(message) {
 				assert.equal(message, 'hello');
+				socketClose(socket);
+				socketsController.destroy();
 
 				done();
 			});
@@ -141,6 +156,27 @@ describe('SocketsController', function() {
 			peersController.emit('needSocketSend', id, 'hello');
 		})
 	})
+
+	it('#destroy', function(done) {
+		var socketsController = new SocketsController(port);
+		var socket = new Socket('http://localhost:' + port);
+
+		socket.send('message');
+		socketsController.on('socketMessage', function() {
+			socketsController.destroy();
+		});
+
+		socketsController.on('serverDestroyed', function() {
+			var socket = new Socket('http://localhost:' + port, {
+				forceNew: true,
+				reconnection: false
+			});
+
+			socket.on('connect_error', function() {
+				done()
+			})
+		});
+	});
 });
 
 describe('PeersController', function() {
@@ -174,6 +210,10 @@ describe('PeersController', function() {
 		peersController.on('peerConnection', function(id) {
 			assert.equal(id, 0);
 
+			socketClose(socket);
+			peersController.destroy();
+			socketsController.destroy();
+
 			done();
 		});
 	});
@@ -199,6 +239,10 @@ describe('PeersController', function() {
 
 		peersController.on('peerDisconnectedTimeout', function(id) {
 			assert.equal(id, 0);
+
+			socketClose(socket);
+			peersController.destroy();
+			socketsController.destroy();
 
 			done();
 		});
@@ -243,7 +287,13 @@ describe('PeersController', function() {
 			});
 
 			socket.on('message', function(message) {
-				if (message.error) done();
+				if (message.error) {
+					socketClose(socket);
+					peersController.destroy();
+					socketsController.destroy();
+
+					done();
+				}
 			})
 		});
 	});
@@ -269,7 +319,13 @@ describe('PeersController', function() {
 			assert.equal(id, 0);
 
 			socket.on('message', function(message) {
-				if (message == 'hello') done();
+				if (message == 'hello') {
+					socketClose(socket);
+					peersController.destroy();
+					socketsController.destroy();
+
+					done();
+				}
 			});
 
 			objectsController.emit('needPeerSend', id, 'hello');
@@ -325,7 +381,13 @@ describe('PeersController', function() {
 				})
 
 				count.push('message');
-				if (count.length == 2) done();
+				if (count.length == 2) {
+					socketClose(socket);
+					peersController.destroy();
+					socketsController.destroy();
+
+					done();
+				}
 			})
 		});
 
@@ -333,7 +395,6 @@ describe('PeersController', function() {
 			assert.equal(id, 0);
 
 			count.push('peerReconnect');
-			if (count.length == 2) done();
 		});
 	});
 
@@ -388,7 +449,13 @@ describe('PeersController', function() {
 				if (messageCount === 2) assert.deepEqual(message, 'hello :)');
 
 				count.push('message');
-				if (count.length == 3) done();
+				if (count.length == 3) {
+					socketClose(socket);
+					peersController.destroy();
+					socketsController.destroy();
+
+					done();
+				}
 			})
 		});
 
@@ -396,7 +463,6 @@ describe('PeersController', function() {
 			assert.equal(id, 0);
 
 			count.push('peerReconnect');
-			if (count.length == 3) done();
 		});
 	});
 
@@ -422,6 +488,11 @@ describe('PeersController', function() {
 
 			socket.on('message', function(message) {
 				assert.equal(message, 'hello');
+
+				socketClose(socket);
+				peersController.destroy();
+				socketsController.destroy();
+
 				done();
 			});
 
@@ -431,7 +502,7 @@ describe('PeersController', function() {
 
 
 
-	it.skip('!peerDisconnect', function(done) {
+	it('!peerDisconnect', function(done) {
 		var socketsController = new SocketsController(port);
 		var peersController = new PeersController().down(socketsController);
 		var socket = new Socket('ws://localhost:' + port);
@@ -452,6 +523,11 @@ describe('PeersController', function() {
 		});
 		peersController.on('peerDisconnect', function(peerId) {
 			assert.equal(peerId, 0);
+
+			socketClose(socket);
+			peersController.destroy();
+			socketsController.destroy();
+
 			done();
 		})
 	});
@@ -509,6 +585,11 @@ describe('ObjectsController', function() {
 				}
 			}, message);
 
+			socketClose(socket);
+			peersController.destroy();
+			socketsController.destroy();
+			objectsController.destroy();
+
 			done();
 		});
 	})
@@ -550,7 +631,14 @@ describe('ObjectsController', function() {
 				eventName: 'simpleEvent',
 				args: ['one', 2, '10']
 			});
-			if (count === 2) done();
+			if (count === 2) {
+				socketClose(socket);
+				peersController.destroy();
+				socketsController.destroy();
+				objectsController.destroy();
+
+				done();
+			}
 		});
 	});
 
@@ -598,7 +686,14 @@ describe('ObjectsController', function() {
 				error: null,
 				result: 'some arg'
 			});
-			if (count === 2) done();
+			if (count === 2) {
+				socketClose(socket);
+				peersController.destroy();
+				socketsController.destroy();
+				objectsController.destroy();
+
+				done();
+			}
 		});
 	});
 })
@@ -637,7 +732,10 @@ describe('TeleportServer', function() {
 					events: ['simpleEvent']
 				}
 			}
-		}).on('serverReady', done);
+		}).on('serverReady', function() {
+			teleportServer.destroy();
+			done();
+		});
 	});
 
 	it('!peerConnection', function(done) {
@@ -655,6 +753,10 @@ describe('TeleportServer', function() {
 			}
 		}).on('peerConnection', function(id) {
 			assert.equal(id, 0);
+
+			socketClose(socket);
+			teleportServer.destroy();
+
 			done();
 		});
 
@@ -668,7 +770,7 @@ describe('TeleportServer', function() {
 		});
 	})
 
-	it.skip('!peerDisconnect', function(done) {
+	it('!peerDisconnect', function(done) {
 		var objWithFuncAndEvents = new ClassWithFuncAndEvents();
 
 		var teleportServer = new TeleportServer({
@@ -683,6 +785,8 @@ describe('TeleportServer', function() {
 			}
 		}).on('peerDisconnect', function(id) {
 			assert.equal(id, 0);
+			teleportServer.destroy();
+
 			done();
 		});
 
@@ -716,6 +820,8 @@ describe('TeleportServer', function() {
 			}
 		}).on('peerDisconnectedTimeout', function(id) {
 			assert.equal(id, 0);
+			teleportServer.destroy();
+
 			done();
 		});
 
@@ -763,6 +869,9 @@ describe('TeleportServer', function() {
 			})
 		}).on('peerReconnect', function(id) {
 			assert.equal(id, 0);
+			socketClose(socket);
+			teleportServer.destroy();
+
 			done();
 		});
 
@@ -832,6 +941,10 @@ describe('TeleportServer', function() {
 						error: null,
 						result: 'nyan'
 					});
+
+					socketClose(socket);
+					teleportServer.destroy();
+
 					done();
 				}
 			})
@@ -891,6 +1004,10 @@ describe('TeleportServer', function() {
 						eventName: 'simpleEvent',
 						args: ['hello']
 					});
+
+					socketClose(socket);
+					teleportServer.destroy();
+
 					done();
 				}
 			})
@@ -906,7 +1023,35 @@ describe('TeleportServer', function() {
 		});
 	})
 
+	it('#destroy', function(done) {
+		var objWithFuncAndEvents = new ClassWithFuncAndEvents();
+		var clientTimestamp = new Date().valueOf();
 
+		var teleportServer = new TeleportServer({
+			port: port,
+			peerDisconnectedTimeout: 50,
+			objects: {
+				'blank': {
+					object: objWithFuncAndEvents,
+					methods: ['simpleFunc'],
+					events: ['simpleEvent']
+				}
+			}
+		}).on('peerConnection', function() {
+
+			teleportServer.destroy();
+		}).on('serverDestroyed', done);
+
+		var socket = new Socket('http://localhost:' + port);
+		socket.send({
+			type: 'internalCommand',
+			internalCommand: 'connect',
+			args: {
+				clientTimestamp: clientTimestamp
+			}
+		});
+
+	})
 });
 
 //

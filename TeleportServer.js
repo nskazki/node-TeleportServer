@@ -15,6 +15,7 @@
 
 		serverReady
 		serverError
+		serverDestroyed
 
 		peerReconnect
 		peerDisconnect
@@ -73,6 +74,22 @@ function TeleportServer(params) {
 	this._bindOnControllersEvents();
 }
 
+TeleportServer.prototype.destroy = function() {
+	this._objectsController.destroy();
+	this._socketsController.destroy(); //-> serverDestroyed
+	this._peersController.destroy();
+
+	this.on('serverDestroyed', function() {
+		this._objectsController.removeAllListeners();
+		this._socketsController.removeAllListeners();
+		this._peersController.removeAllListeners();
+
+		this._objectsController = null;
+		this._socketsController = null;
+		this._peersController = null;
+	}.bind(this));
+};
+
 TeleportServer.prototype._initAsyncEmit = function() {
 	var vanullaEmit = this.emit;
 	this.emit = function() {
@@ -90,7 +107,7 @@ TeleportServer.prototype._bindOnControllersEvents = function() {
 	);
 
 	this._createEvetnsProxy(
-		this._socketsController, ['serverReady', 'serverError']
+		this._socketsController, ['serverReady', 'serverError', 'serverDestroyed']
 	);
 }
 

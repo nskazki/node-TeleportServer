@@ -29,17 +29,6 @@ var events = require('events');
 var jjv = require('jjv')();
 var debug = require('debug')('TeleportServer:PeersController');
 
-var Winston = require('winston');
-var logger = new(Winston.Logger)({
-	transports: [
-		new(Winston.transports.Console)({
-			timestamp: true,
-			level: 'debug',
-			colorize: true
-		})
-	]
-});
-
 module.exports = PeersController;
 
 util.inherits(PeersController, events.EventEmitter);
@@ -53,6 +42,22 @@ function PeersController(peerDisconnectedTimeout) {
 
 	this._selfBind();
 	this._initAsyncEmit();
+}
+
+PeersController.prototype.destroy = function() {
+	for (var peerId in this._peerList) {
+		if (this._peerList.hasOwnProperty(peerId)) {
+			var peer = this._peerList[peerId];
+			peer.destroy().removeAllListeners();
+		}
+	}
+
+	this._peerList = null;
+	this._socketToPeerMap = null;
+	this._lastPeerId = null;
+	this._peerDisconnectedTimeout = null;
+
+	return this;
 }
 
 PeersController.prototype._initAsyncEmit = function() {
@@ -88,13 +93,13 @@ PeersController.prototype._selfBind = function() {
 
 PeersController.prototype._onNeedPeerSend = function(peerId, message) {
 	var peer = this._peerList[peerId];
-	if (!peer) return logger.warn('peers, id: %s - ~needPeerSend, peer not found, message: ', peerId, message);
+	if (!peer) return debug('peers, id: %s - ~needPeerSend, peer not found, message: %j', peerId, message);
 
 	if (peer._socketId) {
-		logger.debug('peers, id: %s - ~needPeerSend, message: ', peerId, message);
+		debug('peers, id: %s - ~needPeerSend, message: %j', peerId, message);
 		this.emit('needSocketSend', peer._socketId, message);
 	} else {
-		logger.debug('peers, id: %s - ~needPeerSend - send it later, message: ', peerId, message);
+		debug('peers, id: %s - ~needPeerSend - send it later, message: %j', peerId, message);
 		peer._messageQueue.push(message);
 	}
 };
@@ -103,7 +108,7 @@ PeersController.prototype.up = function(objectsController) {
 	objectsController.on('needPeerSend', this._onNeedPeerSend.bind(this));
 
 	objectsController.on('needPeersBroadcastSend', function(message) {
-		logger.debug('peers, id: all - ~needPeersBroadcastSend, message: ', message);
+		debug('peers, id: all - ~needPeersBroadcastSend, message: %j', message);
 
 		for (var peerId in this._peerList) {
 			if (this._peerList.hasOwnProperty(peerId)) {
@@ -118,12 +123,12 @@ PeersController.prototype.up = function(objectsController) {
 PeersController.prototype.down = function(socketsController) {
 	socketsController.on('socketMessage', function(socketId, message) {
 		if (!this._findPeer(socketId)) {
-			logger.debug('peers, withoutId - #_peerAuth, socketId: %s, messager: ', socketId, message);
+			debug('peers, withoutId - #_peerAuth, socketId: %s, messager: %j', socketId, message);
 
 			this._peerAuth(socketId, message);
 		} else {
 			var peerId = this._findPeerId(socketId);
-			logger.debug('peers, id: %s - !peerMessage: ', peerId, message);
+			debug('peers, id: %s - !peerMessage: %j', peerId, message);
 
 			this.emit('peerMessage', peerId, message);
 		}
@@ -133,7 +138,7 @@ PeersController.prototype.down = function(socketsController) {
 		if (this._findPeer(socketId)) {
 			var peerId = this._findPeerId(socketId);
 
-			logger.debug('peers, id: %s - !peerDisconnect.', peerId);
+			debug('peers, id: %s - !peerDisconnect.', peerId);
 			this.emit('peerDisconnect', peerId);
 		}
 	}.bind(this));
@@ -169,15 +174,15 @@ PeersController.prototype._peerConnect = function(socketId, message) {
 			delete this._peerList[peerId];
 			peer.destroy().removeAllListeners();
 
-			logger.warn('peers, id: %s - !peerDisconnectedTimeout.', peerId);
+			debug('peers, id: %s - !peerDisconnectedTimeout.', peerId);
 			this.emit('peerDisconnectedTimeout', peerId);
 		}.bind(this));
 
 	this._socketToPeerMap[socketId] = peerId;
 	this._peerList[peerId] = peer;
 
-	logger.debug('peers, id: %s - !needObjectsSend.', peerId);
-	logger.debug('peers, id: %s - !peerConnection.', peerId);
+	debug('peers, id: %s - !needObjectsSend.', peerId);
+	debug('peers, id: %s - !peerConnection.', peerId);
 
 	// one message in - one message out
 	// objectsController listenings ~needObjectsSend and emitted
@@ -191,7 +196,7 @@ PeersController.prototype._peerReconnect = function(socketId, message) {
 	var peerId = message.args.peerId;
 	var clientTimestamp = message.args.clientTimestamp;
 
-	logger.debug('peers, id: %s - #_peerReconnect.', peerId);
+	debug('peers, id: %s - #_peerReconnect.', peerId);
 
 	var peer = this._peerList[peerId];
 	if (peer && (peer._clientTimestamp == clientTimestamp)) {
@@ -205,13 +210,13 @@ PeersController.prototype._peerReconnect = function(socketId, message) {
 		});
 
 		this._socketToPeerMap[socketId] = peerId;
-		
-		logger.debug('peers, id: %s - !peerReconnect.', peerId);
+
+		debug('peers, id: %s - !peerReconnect.', peerId);
 
 		return this.emit('peerReconnect', peerId);
 	}
 
-	logger.warn('peers, id: %s - reconnect error, socketId: %s, message: ', peerId, socketId, message);
+	debug('peers, id: %s - reconnect error, socketId: %s, message: %j', peerId, socketId, message);
 	this.emit('needSocketSend', socketId, {
 		type: 'internalCallback',
 		internalCommand: message.internalCommand,
@@ -234,13 +239,13 @@ function Peer(socketId, peerId, clientTimestamp, peerDisconnectedTimeout) {
 }
 
 Peer.prototype.disconnect = function() {
-	logger.debug('peer, peerId: %s, socketId:  %s - #disconnect.', this._peerId, this._socketId);
+	debug('peer, peerId: %s, socketId:  %s - #disconnect.', this._peerId, this._socketId);
 
 	this._oldSocketId = this._socketId;
 	this._socketId = null;
 
 	this._timeoutId = setTimeout(function() {
-		logger.warn('peer, peerId: %s, oldSocketId:  %s - !timeout, peerDisconnectedTimeout: %d.',
+		debug('peer, peerId: %s, oldSocketId:  %s - !timeout, peerDisconnectedTimeout: %d.',
 			this._peerId, this._oldSocketId, this._peerDisconnectedTimeout);
 
 		this.emit('timeout', this._peerId);
@@ -250,7 +255,7 @@ Peer.prototype.disconnect = function() {
 }
 
 Peer.prototype.reconnect = function(socketId) {
-	logger.debug('peer, id: %s, oldSocketId: %s - #reconnect, newSocketId: %s.',
+	debug('peer, id: %s, oldSocketId: %s - #reconnect, newSocketId: %s.',
 		this._peerId, this._oldSocketId, socketId);
 
 	if (this._timeoutId) {
@@ -264,7 +269,7 @@ Peer.prototype.reconnect = function(socketId) {
 }
 
 Peer.prototype.destroy = function() {
-	logger.debug('peer, peerId: %s, oldSocketId:  %s - #destroy.', 
+	debug('peer, peerId: %s, oldSocketId:  %s - #destroy.',
 		this._peerId, this._oldSocketId);
 
 	if (this._timeoutId) {
@@ -338,7 +343,7 @@ jjv.addSchema('reconnect', {
 
 jjv.test = function(schema, object) {
 	var error = jjv.validate(schema, object);
-	if (error) logger.warn('schema %s, error: ', schema, error);
+	if (error) debug('schema %s, error: ', schema, error);
 
 	return !!!error;
 
