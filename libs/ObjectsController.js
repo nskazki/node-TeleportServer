@@ -33,7 +33,7 @@ function ObjectsController(objects) {
 	this._eventsSubscription(objects);
 
 	this._initAsyncEmit();
-
+	
 	this._isInit = true;
 }
 
@@ -100,7 +100,7 @@ ObjectsController.prototype._eventsSubscription = function(_objects) {
 
 	function createEventListener(objectName, eventName) {
 		return function() {
-			debug('objects, peerId: all, !needPeersBroadcastSend. objectName: %s, eventName: %s.',
+			debug('!needPeersBroadcastSend. objectName: %s, eventName: %s.',
 				objectName, eventName);
 
 			var args = Array.prototype.slice.call(arguments);
@@ -130,7 +130,7 @@ ObjectsController.prototype._formatObjectsProps = function(_objects) {
 
 ObjectsController.prototype.down = function(peersController) {
 	peersController.on('peerMessage', function(peerId, message) {
-		debug('objects, peerId: %s, ~peerMessage, message: %j', peerId, message);
+		debug('peerId: %s, ~peerMessage -> #_callCommand,\n\t message: %j', peerId, message);
 
 		if (jjv.test('command', message)) {
 			this._callCommand(peerId, message);
@@ -138,7 +138,7 @@ ObjectsController.prototype.down = function(peersController) {
 	}.bind(this));
 
 	peersController.on('needObjectsSend', function(peerId) {
-		debug('objects, peerId: %s - ~needObjectsSend.', peerId);
+		debug('peerId: %s - ~needObjectsSend -> !needPeerSend.', peerId);
 
 		this.emit('needPeerSend', peerId, {
 			type: 'internalCallback',
@@ -158,7 +158,7 @@ ObjectsController.prototype._callCommand = function(peerId, message) {
 	if (this._objectsProps[message.objectName] &&
 		(this._objectsProps[message.objectName].methods.indexOf(message.methodName) != -1)) {
 
-		debug('objects, peerId: %s - #_callCommand, message: %j', peerId, message);
+		debug('peerId: %s - #_callCommand-init,\n\t message: %j', peerId, message);
 
 		var callback = commandCallbackCreate(peerId, message).bind(this);
 		var args = message.args;
@@ -179,7 +179,7 @@ ObjectsController.prototype._callCommand = function(peerId, message) {
 				result: result
 			};
 
-			debug('objects, peerId: %s - !needPeerSend, message: %j', peerId, message);
+			debug('peerId: %s - #_callCommand-callback -> !needPeerSend,\n\t message: %j', peerId, message);
 			this.emit('needPeerSend', peerId, resultToSend);
 		}
 	};

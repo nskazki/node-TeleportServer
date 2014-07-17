@@ -229,7 +229,6 @@ describe('PeersController', function() {
 		var clientTimestamp = new Date().valueOf();
 
 		peersController.on('peerConnection', function(id) {
-			assert.equal(id, 0);
 			socketClose(socket);
 		});
 

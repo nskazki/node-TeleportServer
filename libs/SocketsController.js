@@ -47,7 +47,7 @@ function SocketsController(_port) {
 }
 
 SocketsController.prototype.destroy = function() {
-	debug('ws, id: all - #destroy, server destroyed');
+	debug('#destroy -> init destroy process');
 
 	if (this._isInit === true) {
 		this._isInit = false;
@@ -61,10 +61,12 @@ SocketsController.prototype.destroy = function() {
 
 		setTimeout(function() {
 			this.close();
-			
+
 			setTimeout(function() {
+				debug('destroy process end -> !serverDestroyed');
+
 				this.emit('serverDestroyed');
-			}.bind(this), 100);
+			}.bind(this), 200);
 
 		}.bind(this), 100);
 
@@ -74,6 +76,8 @@ SocketsController.prototype.destroy = function() {
 		//console.log('im sorry');
 
 	} else {
+		debug('server already destroyed -> !alreadyServerDestroyed');
+
 		this.emit('alreadyServerDestroyed');
 	}
 
@@ -101,28 +105,29 @@ SocketsController.prototype._init = function(_httpServer) {
 	this._wsServer.sockets.on('connection', function(ws) {
 		var socketId = ws.id;
 
-		debug('ws, id: %s - !socketConnection', socketId);
+		debug('socketId: %s - ~connection -> add socket to _wsList &&  !socketConnection', socketId);
 		this._wsList[socketId] = ws;
 
 		this.emit('socketConnection', socketId);
 
-		ws.on('message', function(data) {
-			debug('ws, id: %s - !socketMessage: %j', socketId, data);
+		ws.on('message', function(message) {
+			debug('socketId: %s - ~message -> !socketMessage,\n\t message: %j', socketId, message);
 
-			this.emit('socketMessage', socketId, data);
+			this.emit('socketMessage', socketId, message);
 		}.bind(this));
 
 		ws.on('error', function(error) {
-			debug('ws, id %s - !socketError: %s', socketId, error.toString());
+			debug('socketId: %s - ~error -> !socketError,\n\t error %s', socketId, error.toString());
 
 			this.emit('socketError', error);
 		})
 
 		ws.on('disconnect', function() {
-			debug('ws, id: %s - !socketDisconnection', socketId);
+			debug('socketId: %s - ~disconnect -> remove from _wsList && !socketDisconnection', socketId);
 
 			ws.removeAllListeners();
 			delete this._wsList[socketId];
+
 			this.emit('socketDisconnection', socketId);
 		}.bind(this));
 
@@ -169,25 +174,25 @@ SocketsController.prototype.close = function() {
 		this._httpServer.removeAllListeners();
 
 		this._httpServer.on('close', function() {
-			debug('#close, httpServer port: %d - !serverClose', this._port);
+			debug('httpServer port: %d - ~close -> !serverClose', this._port);
 			updateAndCheckCount.bind(this)('httpServer');
 		}.bind(this)).close();
 
 	} catch (ex) {
-		updateAndCheckCount.bind(this)('httpServer');
-		debug('httpServer Close - Error: ', ex.toString());
+		debug('httpServer port: %d - #close error: %s', this._port, ex.toString());
+		updateAndCheckCount.bind(this)('httpServer');	
 	}
 
 	try {
 		this._wsServer.eio.ws._server
 			.on('close', function() {
-				debug('#close, httpServer port: %d - !serverClose', this._port);
+				debug('wsServer port: %d - ~close -> !serverClose', this._port);
 				updateAndCheckCount.bind(this)('wsServer');
 			}.bind(this))
 			.close();
 	} catch (ex) {
+		debug('wsServer port: %d - #close error: %s', this._port, ex.toString());
 		updateAndCheckCount.bind(this)('wsServer');
-		debug('wsServer Close - Error: ', ex.toString());
 	}
 
 	return this;
@@ -202,9 +207,9 @@ SocketsController.prototype.up = function(peersController) {
 
 	peersController.on('needSocketSend', function(id, message) {
 		var ws = this._wsList[id];
-		if (!ws) return debug('ws, id %s - ~needSocketSend, id not found, message: %j', id, message);
+		if (!ws) return debug('socketId: %s - ~needSocketSend, id not found,\n\t message: %j', id, message);
 
-		debug('ws, id %s - ~needSocketSend, message: %j', id, message);
+		debug('socketId: %s - ~needSocketSend -> #send,\n\t message: %j', id, message);
 		ws.send(message);
 	}.bind(this));
 
