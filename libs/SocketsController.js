@@ -61,13 +61,6 @@ SocketsController.prototype.destroy = function() {
 
 		setTimeout(function() {
 			this.close();
-
-			setTimeout(function() {
-				debug('destroy process end -> !serverDestroyed');
-
-				this.emit('serverDestroyed');
-			}.bind(this), 200);
-
 		}.bind(this), 100);
 
 		//console.log('method #destroy in class SocketsController - not work.');
@@ -169,6 +162,7 @@ SocketsController.prototype._createHttpServer = function(port) {
 
 SocketsController.prototype.close = function() {
 	var count = [];
+	var isEmited = false;
 
 	try {
 		this._httpServer.removeAllListeners();
@@ -180,7 +174,7 @@ SocketsController.prototype.close = function() {
 
 	} catch (ex) {
 		debug('httpServer port: %d - #close error: %s', this._port, ex.toString());
-		updateAndCheckCount.bind(this)('httpServer');	
+		updateAndCheckCount.bind(this)('httpServer');
 	}
 
 	try {
@@ -195,11 +189,25 @@ SocketsController.prototype.close = function() {
 		updateAndCheckCount.bind(this)('wsServer');
 	}
 
+	setTimeout(function() {
+		if (isEmited === false) {
+			debug('destroy process not end, but 500 ms elapse -> !serverDestroyed');
+
+			isEmited = true;
+			this.emit('serverDestroyed');
+		}
+	}.bind(this), 500);
+
 	return this;
 
 	function updateAndCheckCount(name) {
 		count.push(name);
-		//if (count.length == 2) this.emit('serverDestroyed');
+		if ((count.length == 2) && (isEmited === false)) {
+			debug('destroy process end -> !serverDestroyed');
+
+			isEmited = true;
+			this.emit('serverDestroyed');
+		}
 	}
 }
 
