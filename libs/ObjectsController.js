@@ -5,7 +5,9 @@
 		
 		needPeersBroadcastSend
 		needPeerSend
-
+	
+		objectsControllerDestroyed
+		objectsControllerAlreadyDestroyed
 
 	Listenings:
 
@@ -31,9 +33,18 @@ function ObjectsController(objects) {
 	this._eventsSubscription(objects);
 
 	this._initAsyncEmit();
+
+	this._isInit = true;
 }
 
 ObjectsController.prototype.destroy = function() {
+	if (this._isInit !== true) {
+		this.emit('objectsControllerAlreadyDestroyed');
+		return this;
+	}
+
+	this._isInit = false;
+
 	for (var objectName in this._objects) {
 
 		if (this._objects.hasOwnProperty(objectName) &&
@@ -52,8 +63,7 @@ ObjectsController.prototype.destroy = function() {
 		}
 	}
 
-	this._objects = null;
-	this._objectsProps = null;
+	this.emit('objectsControllerDestroyed')
 
 	return this;
 };

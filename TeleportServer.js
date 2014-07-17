@@ -80,19 +80,18 @@ TeleportServer.prototype.destroy = function() {
 	if (this._isInit === true) {
 		this._isInit = false;
 
-		this._objectsController.destroy();
-		this._socketsController.destroy(); //-> serverDestroyed
-		this._peersController.destroy();
-
 		this.on('serverDestroyed', function() {
 			this._objectsController.removeAllListeners();
 			this._socketsController.removeAllListeners();
 			this._peersController.removeAllListeners();
-
-			this._objectsController = null;
-			this._socketsController = null;
-			this._peersController = null;
 		}.bind(this));
+
+		this._objectsController.destroy();
+		this._socketsController.destroy(); //-> serverDestroyed
+		this._peersController.destroy();
+
+	} else {
+		this.emit('alreadyServerDestroyed');
 	}
 
 	return this;
@@ -115,7 +114,7 @@ TeleportServer.prototype._bindOnControllersEvents = function() {
 	);
 
 	this._createEvetnsProxy(
-		this._socketsController, ['serverReady', 'serverError', 'serverDestroyed']
+		this._socketsController, ['serverReady', 'serverError', 'serverDestroyed', 'alreadyServerDestroyed']
 	);
 }
 

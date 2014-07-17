@@ -42,29 +42,40 @@ function SocketsController(_port) {
 
 	this._init(this._httpServer);
 	this._initAsyncEmit();
+
+	this._isInit = true;
 }
 
 SocketsController.prototype.destroy = function() {
 	debug('ws, id: all - #destroy, server destroyed');
 
-	for (var wsId in this._wsList) {
-		if (this._wsList.hasOwnProperty(wsId)) {
-			var ws = this._wsList[wsId];
-			ws.removeAllListeners().disconnect();
+	if (this._isInit === true) {
+		this._isInit = false;
+
+		for (var wsId in this._wsList) {
+			if (this._wsList.hasOwnProperty(wsId) && this._wsList[wsId]) {
+				var ws = this._wsList[wsId];
+				ws.removeAllListeners().disconnect();
+			}
 		}
+
+		setTimeout(function() {
+			this.close();
+			
+			setTimeout(function() {
+				this.emit('serverDestroyed');
+			}.bind(this), 100);
+
+		}.bind(this), 100);
+
+		//console.log('method #destroy in class SocketsController - not work.');
+		//console.log('because method #close not work in socket.io.');
+		//console.log('i jast can send to peers "disconnect" message.')
+		//console.log('im sorry');
+
+	} else {
+		this.emit('alreadyServerDestroyed');
 	}
-
-	setTimeout(function() {
-		this.close();
-
-		this._port = null;
-		this._wsServer = null;
-		this._wsList = null;
-		this._httpServer = null;
-
-		this.emit('serverDestroyed');
-
-	}.bind(this), 100);
 
 	return this;
 }
@@ -152,19 +163,39 @@ SocketsController.prototype._createHttpServer = function(port) {
 }
 
 SocketsController.prototype.close = function() {
+	var count = [];
+
 	try {
-		this._httpServer.removeAllListeners().close();
+		this._httpServer.removeAllListeners();
+
+		this._httpServer.on('close', function() {
+			debug('#close, httpServer port: %d - !serverClose', this._port);
+			updateAndCheckCount.bind(this)('httpServer');
+		}.bind(this)).close();
+
 	} catch (ex) {
-		debug('serverClose - Error: ', ex.toString());
+		updateAndCheckCount.bind(this)('httpServer');
+		debug('httpServer Close - Error: ', ex.toString());
 	}
 
 	try {
-		this._wsServer.eio.ws.removeAllListeners().close();
+		this._wsServer.eio.ws._server
+			.on('close', function() {
+				debug('#close, httpServer port: %d - !serverClose', this._port);
+				updateAndCheckCount.bind(this)('wsServer');
+			}.bind(this))
+			.close();
 	} catch (ex) {
-		debug('serverClose - Error: ', ex.toString());
+		updateAndCheckCount.bind(this)('wsServer');
+		debug('wsServer Close - Error: ', ex.toString());
 	}
 
 	return this;
+
+	function updateAndCheckCount(name) {
+		count.push(name);
+		//if (count.length == 2) this.emit('serverDestroyed');
+	}
 }
 
 SocketsController.prototype.up = function(peersController) {

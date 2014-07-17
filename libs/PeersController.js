@@ -12,6 +12,9 @@
 		needSocketSend
 		needObjectsSend
 
+		peersControllerDestroyed
+		peersControllerAlreadyDestroyed
+
 	Listenings:
 	
 		up:
@@ -42,20 +45,25 @@ function PeersController(peerDisconnectedTimeout) {
 
 	this._selfBind();
 	this._initAsyncEmit();
+
+	this._isInit = true;
 }
 
 PeersController.prototype.destroy = function() {
-	for (var peerId in this._peerList) {
-		if (this._peerList.hasOwnProperty(peerId)) {
-			var peer = this._peerList[peerId];
-			peer.destroy().removeAllListeners();
-		}
-	}
+	if (this._isInit === true) {
+		this._isInit = false;
 
-	this._peerList = null;
-	this._socketToPeerMap = null;
-	this._lastPeerId = null;
-	this._peerDisconnectedTimeout = null;
+		for (var peerId in this._peerList) {
+			if (this._peerList.hasOwnProperty(peerId)) {
+				var peer = this._peerList[peerId];
+				peer.destroy().removeAllListeners();
+			}
+		}
+
+		this.emit('peersControllerDestroyed');
+	} else {
+		this.emit('peersControllerAlreadyDestroyed');
+	}
 
 	return this;
 }
@@ -111,7 +119,7 @@ PeersController.prototype.up = function(objectsController) {
 		debug('peers, id: all - ~needPeersBroadcastSend, message: %j', message);
 
 		for (var peerId in this._peerList) {
-			if (this._peerList.hasOwnProperty(peerId)) {
+			if (this._peerList.hasOwnProperty(peerId) && this._peerList[peerId]) {
 				this.emit('needPeerSend', peerId, message);
 			}
 		}
