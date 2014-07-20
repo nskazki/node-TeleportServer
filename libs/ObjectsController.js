@@ -28,17 +28,20 @@ module.exports = ObjectsController;
 util.inherits(ObjectsController, events.EventEmitter);
 
 function ObjectsController(objects) {
+	this._initAsyncEmit();
+
 	this._objects = objects;
 	this._objectsProps = this._formatObjectsProps(objects);
 	this._eventsSubscription(objects);
 
-	this._initAsyncEmit();
-	
 	this._isInit = true;
 }
 
 ObjectsController.prototype.destroy = function() {
+	debug('ObjectsController#destroy -> init destroy process');
+
 	if (this._isInit !== true) {
+		debug('already destroyed -> !objectsControllerAlreadyDestroyed');
 		this.emit('objectsControllerAlreadyDestroyed');
 		return this;
 	}
@@ -63,6 +66,7 @@ ObjectsController.prototype.destroy = function() {
 		}
 	}
 
+	debug('destroy process end -> !objectsControllerDestroyed');
 	this.emit('objectsControllerDestroyed')
 
 	return this;
@@ -160,7 +164,7 @@ ObjectsController.prototype._callCommand = function(peerId, message) {
 
 		debug('peerId: %s - #_callCommand-init,\n\t message: %j', peerId, message);
 
-		var callback = commandCallbackCreate(peerId, message).bind(this);
+		var callback = createCommandCallback(peerId, message).bind(this);
 		var args = message.args;
 		args.push(callback);
 
@@ -168,7 +172,7 @@ ObjectsController.prototype._callCommand = function(peerId, message) {
 		object[message.methodName].apply(object, args);
 	}
 
-	function commandCallbackCreate(peerId, message) {
+	function createCommandCallback(peerId, message) {
 		return function(error, result) {
 			var resultToSend = {
 				objectName: message.objectName,

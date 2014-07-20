@@ -36,7 +36,7 @@ describe('SocketsController', function() {
 	beforeEach(function(done) {
 		port++;
 
-		socketsController = new SocketsController(port).on('serverReady', done);
+		socketsController = new SocketsController(port).on('socketsControllerReady', done);
 
 		peersController = new events.EventEmitter();
 		socketsController.up(peersController);
@@ -54,11 +54,11 @@ describe('SocketsController', function() {
 		peersController.removeAllListeners();
 
 		socketsController.removeAllListeners()
-			.on('serverDestroyed', function() {
+			.on('socketsControllerDestroyed', function() {
 				socketsController.removeAllListeners();
 				done();
 			})
-			.on('alreadyServerDestroyed', function() {
+			.on('socketsControllerAlreadyDestroyed', function() {
 				socketsController.removeAllListeners();
 				done();
 			})
@@ -66,10 +66,10 @@ describe('SocketsController', function() {
 	})
 
 	it('#close - two server, one port', function(done) {
-		socketsController.on('serverDestroyed', function() {
+		socketsController.on('socketsControllerDestroyed', function() {
 			socketsController = new SocketsController(port);
-			socketsController.on('serverReady', done);
-			socketsController.on('serverError', done);
+			socketsController.on('socketsControllerReady', done);
+			socketsController.on('socketsControllerError', done);
 		}).destroy();
 	});
 
@@ -136,7 +136,7 @@ describe('SocketsController', function() {
 			socketsController.destroy();
 		})
 
-		socketsController.on('serverDestroyed', function() {
+		socketsController.on('socketsControllerDestroyed', function() {
 			var socket2 = new Socket('http://localhost:' + port, {
 				forceNew: true,
 				reconnection: false
@@ -163,7 +163,7 @@ describe('PeersController', function() {
 		socketsController.up(peersController);
 		peersController.down(socketsController).up(objectsController);
 
-		socketsController.on('serverReady', done);
+		socketsController.on('socketsControllerReady', done);
 
 		socket = new Socket('ws://localhost:' + port)
 	});
@@ -174,11 +174,11 @@ describe('PeersController', function() {
 
 		socketsController
 			.removeAllListeners()
-			.on('serverDestroyed', function() {
+			.on('socketsControllerDestroyed', function() {
 				socketsController.removeAllListeners();
 				done();
 			})
-			.on('alreadyServerDestroyed', function() {
+			.on('socketsControllerAlreadyDestroyed', function() {
 				socketsController.removeAllListeners();
 				done();
 			})
@@ -470,7 +470,7 @@ describe('ObjectsController', function() {
 		socketsController = new SocketsController(port);
 		peersController = new PeersController(100);
 
-		socketsController.up(peersController).on('serverReady', done);;
+		socketsController.up(peersController).on('socketsControllerReady', done);;
 		peersController.down(socketsController).up(objectsController);
 		objectsController.down(peersController);
 
@@ -485,11 +485,11 @@ describe('ObjectsController', function() {
 
 		socketsController
 			.removeAllListeners()
-			.on('serverDestroyed', function() {
+			.on('socketsControllerDestroyed', function() {
 				socketsController.removeAllListeners();
 				done();
 			})
-			.on('alreadyServerDestroyed', function() {
+			.on('socketsControllerAlreadyDestroyed', function() {
 				socketsController.removeAllListeners();
 				done();
 			})
@@ -609,7 +609,7 @@ describe('TeleportServer', function() {
 					events: ['simpleEvent']
 				}
 			}
-		}).on('serverReady', done);
+		}).on('ready', done);
 
 		socket = new Socket('http://localhost:' + port);
 	});
@@ -618,16 +618,16 @@ describe('TeleportServer', function() {
 		objWithFuncAndEvents.removeAllListeners();
 
 		teleportServer.removeAllListeners()
-			.on('serverDestroyed', function() {
+			.on('destroyed', function() {
 				teleportServer.removeAllListeners();
 				done();
 			})
-			.on('alreadyServerDestroyed', function() {
+			.on('alreadyDestroyed', function() {
 				teleportServer.removeAllListeners();
 				done();
 			})
 			.destroy();
-
+	
 		socketClose(socket);
 	})
 
@@ -837,7 +837,7 @@ describe('TeleportServer', function() {
 		teleportServer.on('peerConnection', function() {
 
 			teleportServer.destroy();
-		}).on('serverDestroyed', done);
+		}).on('destroyed', done);
 
 		socket.send({
 			type: 'internalCommand',

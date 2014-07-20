@@ -13,9 +13,10 @@
 
 	Events:
 
-		serverReady
-		serverError
-		serverDestroyed
+		socketsControllerReady
+		socketsControllerError
+		socketsControllerDestroyed
+		socketsControllerAlreadyDestroyed
 
 		peerReconnection
 		peerDisconnection
@@ -38,17 +39,6 @@ var patternMatching = require('pattern-matching');
 
 var debug = require('debug')('TeleportServer:Main');
 
-var Winston = require('winston');
-var logger = new(Winston.Logger)({
-	transports: [
-		new(Winston.transports.Console)({
-			timestamp: true,
-			level: 'debug',
-			colorize: true
-		})
-	]
-});
-
 module.exports = TeleportServer;
 
 util.inherits(TeleportServer, events.EventEmitter);
@@ -59,6 +49,8 @@ function TeleportServer(params) {
 		port: 'integer',
 		objects: 'teleportedObjects'
 	}), 'does not match pattern.');
+
+	this._initAsyncEmit();
 
 	this._params = params;
 
@@ -72,7 +64,6 @@ function TeleportServer(params) {
 
 	this._isInit = true;
 
-	this._initAsyncEmit();
 	this._bindOnControllersEvents();
 }
 
@@ -80,18 +71,18 @@ TeleportServer.prototype.destroy = function() {
 	if (this._isInit === true) {
 		this._isInit = false;
 
-		this.on('serverDestroyed', function() {
+		this.on('destroyed', function() {
 			this._objectsController.removeAllListeners();
 			this._socketsController.removeAllListeners();
 			this._peersController.removeAllListeners();
 		}.bind(this));
 
 		this._objectsController.destroy();
-		this._socketsController.destroy(); //-> serverDestroyed
+		this._socketsController.destroy(); //-> socketsControllerDestroyed
 		this._peersController.destroy();
 
 	} else {
-		this.emit('alreadyServerDestroyed');
+		this.emit('alreadyDestroyed');
 	}
 
 	return this;
@@ -109,22 +100,34 @@ TeleportServer.prototype._initAsyncEmit = function() {
 }
 
 TeleportServer.prototype._bindOnControllersEvents = function() {
-	this._createEvetnsProxy(
-		this._peersController, ['peerReconnection', 'peerDisconnection', 'peerConnection', 'peerDisconnectedTimeout']
-	);
+	var names = ['peerReconnection', 'peerDisconnection', 'peerConnection', 'peerDisconnectedTimeout'];
 
 	this._createEvetnsProxy(
-		this._socketsController, ['serverReady', 'serverError', 'serverDestroyed', 'alreadyServerDestroyed']
+		this._peersController,
+		names
+	);
+
+
+	var sourceNames = ['socketsControllerReady', 'socketsControllerError', 'socketsControllerDestroyed', 'socketsControllerAlreadyDestroyed'];
+	var newNames = ['ready', 'error', 'destroyed', 'alreadyDestroyed'];
+
+	this._createEvetnsProxy(
+		this._socketsController,
+		sourceNames,
+		newNames
 	);
 }
 
-TeleportServer.prototype._createEvetnsProxy = function(object, events) {
-	events.forEach(function(eventName) {
+TeleportServer.prototype._createEvetnsProxy = function(object, eventsSourceNames, eventsNewNames) {
+	for (var index = 0; index < eventsSourceNames.length; index++) {
+		var sourceName = eventsSourceNames[index];
+		var newName = (eventsNewNames) ? eventsNewNames[index] : sourceName;
+
 		object.on(
-			eventName,
-			this._createEventProxy(eventName).bind(this)
+			sourceName,
+			this._createEventProxy(newName).bind(this)
 		);
-	}.bind(this));
+	}
 }
 
 TeleportServer.prototype._createEventProxy = function(eventName) {

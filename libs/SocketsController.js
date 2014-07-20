@@ -1,9 +1,10 @@
 /*
 	Events:
 		
-		serverReady
-		serverError
-		serverDestroyed
+		socketsControllerReady
+		socketsControllerError
+		socketsControllerDestroyed
+		socketsControllerAlreadyDestroyed
 
 		socketConnection
 		socketMessage
@@ -35,33 +36,34 @@ module.exports = SocketsController;
 util.inherits(SocketsController, events.EventEmitter);
 
 function SocketsController(_port) {
-	this._port = _port;
-	this._wsServer = null;
-	this._wsList = {};
-	this._httpServer = this._createHttpServer(_port);
-
-	this._init(this._httpServer);
 	this._initAsyncEmit();
+	
+	this._port = _port;
+	this._socketsServer = null;
+	this._socketsList = {};
+	this._httpServer = this._createHttpServer();
+
+	this._init();
 
 	this._isInit = true;
 }
 
 SocketsController.prototype.destroy = function() {
-	debug('#destroy -> init destroy process');
+	debug('SocketsController#destroy -> init destroy process');
 
 	if (this._isInit === true) {
 		this._isInit = false;
 
-		for (var wsId in this._wsList) {
-			if (this._wsList.hasOwnProperty(wsId) && this._wsList[wsId]) {
-				var ws = this._wsList[wsId];
+		for (var wsId in this._socketsList) {
+			if (this._socketsList.hasOwnProperty(wsId) && this._socketsList[wsId]) {
+				var ws = this._socketsList[wsId];
 				ws.removeAllListeners().disconnect();
 			}
 		}
 
 		setTimeout(function() {
 			this.close();
-		}.bind(this), 100);
+		}.bind(this), 200);
 
 		//console.log('method #destroy in class SocketsController - not work.');
 		//console.log('because method #close not work in socket.io.');
@@ -69,9 +71,9 @@ SocketsController.prototype.destroy = function() {
 		//console.log('im sorry');
 
 	} else {
-		debug('server already destroyed -> !alreadyServerDestroyed');
+		debug('server already destroyed -> !socketsControllerAlreadyDestroyed');
 
-		this.emit('alreadyServerDestroyed');
+		this.emit('socketsControllerAlreadyDestroyed');
 	}
 
 	return this;
@@ -88,18 +90,18 @@ SocketsController.prototype._initAsyncEmit = function() {
 	}.bind(this);
 }
 
-SocketsController.prototype._init = function(_httpServer) {
+SocketsController.prototype._init = function() {
 	//wss
-	this._wsServer = new WebSocketServer(_httpServer);
+	this._socketsServer = new WebSocketServer(this._httpServer);
 
 	//end wss
 
 	//ws
-	this._wsServer.sockets.on('connection', function(ws) {
+	this._socketsServer.sockets.on('connection', function(ws) {
 		var socketId = ws.id;
 
-		debug('socketId: %s - ~connection -> add socket to _wsList &&  !socketConnection', socketId);
-		this._wsList[socketId] = ws;
+		debug('socketId: %s - ~connection -> add socket to _socketsList &&  !socketConnection', socketId);
+		this._socketsList[socketId] = ws;
 
 		this.emit('socketConnection', socketId);
 
@@ -116,10 +118,10 @@ SocketsController.prototype._init = function(_httpServer) {
 		})
 
 		ws.on('disconnect', function() {
-			debug('socketId: %s - ~disconnect -> remove from _wsList && !socketDisconnection', socketId);
+			debug('socketId: %s - ~disconnect -> remove from _socketsList && !socketDisconnection', socketId);
 
 			ws.removeAllListeners();
-			delete this._wsList[socketId];
+			delete this._socketsList[socketId];
 
 			this.emit('socketDisconnection', socketId);
 		}.bind(this));
@@ -131,31 +133,31 @@ SocketsController.prototype._init = function(_httpServer) {
 	return this;
 }
 
-SocketsController.prototype._createHttpServer = function(port) {
+SocketsController.prototype._createHttpServer = function() {
 	var srv = http.Server(function(req, res) {
 		res.writeHead(404);
 		res.end();
 	});
 
 	srv.on('listening', function() {
-		debug('HttpServer, port: %d - !serverReady', port);
+		debug('HttpServer, port: %d - !socketsControllerReady', this._port);
 
-		this.emit('serverReady');
+		this.emit('socketsControllerReady');
 	}.bind(this))
 
 	srv.on('error', function(error) {
-		debug('HttpServer, port: %d - !serverError: %s', port, error.toString());
+		debug('HttpServer, port: %d - !socketsControllerError: %s', this._port, error.toString());
 
-		this.emit('serverError', error);
+		this.emit('socketsControllerError', error);
 	}.bind(this));
 
 	srv.on('close', function() {
-		debug('HttpServer, port: %d - !serverClose', port);
+		debug('HttpServer, port: %d - !serverClose', this._port);
 
 		this.emit('serverClose');
 	});
 
-	srv.listen(port);
+	srv.listen(this._port);
 
 	return srv;
 }
@@ -178,7 +180,7 @@ SocketsController.prototype.close = function() {
 	}
 
 	try {
-		this._wsServer.eio.ws._server
+		this._socketsServer.eio.ws._server
 			.on('close', function() {
 				debug('wsServer port: %d - ~close -> !serverClose', this._port);
 				updateAndCheckCount.bind(this)('wsServer');
@@ -191,10 +193,10 @@ SocketsController.prototype.close = function() {
 
 	setTimeout(function() {
 		if (isEmited === false) {
-			debug('destroy process not end, but 500 ms elapse -> !serverDestroyed');
+			debug('destroy process not end, but 500 ms elapse -> !socketsControllerDestroyed');
 
 			isEmited = true;
-			this.emit('serverDestroyed');
+			this.emit('socketsControllerDestroyed');
 		}
 	}.bind(this), 500);
 
@@ -203,10 +205,10 @@ SocketsController.prototype.close = function() {
 	function updateAndCheckCount(name) {
 		count.push(name);
 		if ((count.length == 2) && (isEmited === false)) {
-			debug('destroy process end -> !serverDestroyed');
+			debug('destroy process end -> !socketsControllerDestroyed');
 
 			isEmited = true;
-			this.emit('serverDestroyed');
+			this.emit('socketsControllerDestroyed');
 		}
 	}
 }
@@ -214,7 +216,7 @@ SocketsController.prototype.close = function() {
 SocketsController.prototype.up = function(peersController) {
 
 	peersController.on('needSocketSend', function(id, message) {
-		var ws = this._wsList[id];
+		var ws = this._socketsList[id];
 		if (!ws) return debug('socketId: %s - ~needSocketSend, id not found,\n\t message: %j', id, message);
 
 		debug('socketId: %s - ~needSocketSend -> #send,\n\t message: %j', id, message);

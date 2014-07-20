@@ -37,6 +37,8 @@ module.exports = PeersController;
 util.inherits(PeersController, events.EventEmitter);
 
 function PeersController(peerDisconnectedTimeout) {
+	this._initAsyncEmit();
+
 	this._socketToPeerMap = {};
 	this._peerList = {};
 	this._peerDisconnectedTimeout = peerDisconnectedTimeout;
@@ -44,12 +46,13 @@ function PeersController(peerDisconnectedTimeout) {
 	this._lastPeerId = 0;
 
 	this._selfBind();
-	this._initAsyncEmit();
 
 	this._isInit = true;
 }
 
 PeersController.prototype.destroy = function() {
+	debug('PeersController#destroy -> init destroy process');
+
 	if (this._isInit === true) {
 		this._isInit = false;
 
@@ -60,8 +63,11 @@ PeersController.prototype.destroy = function() {
 			}
 		}
 
+		debug('destroy process end -> !peersControllerDestroyed');
 		this.emit('peersControllerDestroyed');
 	} else {
+
+		debug('already destroyed -> !peersControllerAlreadyDestroyed');
 		this.emit('peersControllerAlreadyDestroyed');
 	}
 
