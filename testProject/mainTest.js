@@ -98,8 +98,8 @@ SimpleObject.prototype.serverCoreDestroy = function() {
 //main
 //	simpleObject
 var simpleObject = new SimpleObject({
-	foo: 'bar'
-})//.initIntevralEvent();
+		foo: 'bar'
+	}) //.initIntevralEvent();
 
 //	end simpleObject
 
@@ -114,8 +114,7 @@ var debugLogger = new MyLogger.CusotomLogger('mainTest', "DEBG", colors.cyan);
 //	teleportServer
 var teleportServer = new TeleportServer({
 	port: 8000,
-	clientLatency: 20000,
-	autoRestart: 3000,
+	peerDisconnectedTimeout: 20000,
 	objects: {
 		'simpleObject': {
 			object: simpleObject,
@@ -132,20 +131,12 @@ var teleportServer = new TeleportServer({
 			]
 		}
 	}
-}).on('error', function(error) {
-	errorLogger('teleportServer - error', error);
-}).on('warn', function(warn) {
-	warnLogger('teleportServer - warn', warn);
-}).on('info', function(info) {
-	infoLogger('teleportServer - info', info);
-}).on('debug', function(bebug) {
-	debugLogger('teleportServer - bebug', bebug);
-}).on('clientConnected', function() {
+}).on('peerConnection', function() {
 	simpleObject
 		.emitEventWithoutArgs()
 		.emitEventWithOptions()
 		.emitEventWithUnlimArgs();
-}).init();
+});
 
 //	end teleportServer
 
