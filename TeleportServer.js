@@ -4,7 +4,6 @@
 	from russia with love, 2014
 */
 
-
 /**
 
 	Public:
@@ -14,14 +13,14 @@
 	Events:
 
 		socketsControllerReady -> ready
-		socketsControllerError
+		socketsControllerError -> error
 		socketsControllerDestroyed -> destroyed
 		socketsControllerAlreadyDestroyed -> alreadyDestroyed
 
-		peerReconnection
-		peerDisconnection
-		peerConnection
-		peerDisconnectedTimeout
+		peerReconnection -> clientReconnection
+		peerDisconnection -> clientDisconnection
+		peerConnection -> clientConnection
+		peerDisconnectedTimeout -> clientDisconnectedTimeout
 */
 
 "use strict";
@@ -100,21 +99,23 @@ TeleportServer.prototype._initAsyncEmit = function() {
 }
 
 TeleportServer.prototype._bindOnControllersEvents = function() {
-	var names = ['peerReconnection', 'peerDisconnection', 'peerConnection', 'peerDisconnectedTimeout'];
+	var peerSourceNames = ['peerReconnection', 'peerDisconnection', 'peerConnection', 'peerDisconnectedTimeout'];
+	var peerNewNames = ['clientReconnection', 'clientDisconnection', 'clientConnection', 'clientDisconnectedTimeout'];
 
 	this._createEvetnsProxy(
 		this._peersController,
-		names
+		peerSourceNames,
+		peerNewNames
 	);
 
 
-	var sourceNames = ['socketsControllerReady', 'socketsControllerError', 'socketsControllerDestroyed', 'socketsControllerAlreadyDestroyed'];
-	var newNames = ['ready', 'socketsControllerError', 'destroyed', 'alreadyDestroyed'];
+	var socketSourceNames = ['socketsControllerReady', 'socketsControllerError', 'socketsControllerDestroyed', 'socketsControllerAlreadyDestroyed'];
+	var socketNewNames = ['ready', 'error', 'destroyed', 'alreadyDestroyed'];
 
 	this._createEvetnsProxy(
 		this._socketsController,
-		sourceNames,
-		newNames
+		socketSourceNames,
+		socketNewNames
 	);
 }
 
