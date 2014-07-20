@@ -51,8 +51,6 @@ function PeersController(peerDisconnectedTimeout) {
 }
 
 PeersController.prototype.destroy = function() {
-	debug('PeersController#destroy -> init destroy process');
-
 	if (this._isInit === true) {
 		this._isInit = false;
 
@@ -63,11 +61,11 @@ PeersController.prototype.destroy = function() {
 			}
 		}
 
-		debug('destroy process end -> !peersControllerDestroyed');
+		debug('#destroy -> !peersControllerDestroyed');
 		this.emit('peersControllerDestroyed');
 	} else {
 
-		debug('already destroyed -> !peersControllerAlreadyDestroyed');
+		debug('#destroy -> !peersControllerAlreadyDestroyed');
 		this.emit('peersControllerAlreadyDestroyed');
 	}
 

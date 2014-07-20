@@ -38,10 +38,8 @@ function ObjectsController(objects) {
 }
 
 ObjectsController.prototype.destroy = function() {
-	debug('ObjectsController#destroy -> init destroy process');
-
 	if (this._isInit !== true) {
-		debug('already destroyed -> !objectsControllerAlreadyDestroyed');
+		debug('#destroy -> !objectsControllerAlreadyDestroyed');
 		this.emit('objectsControllerAlreadyDestroyed');
 		return this;
 	}
@@ -66,7 +64,7 @@ ObjectsController.prototype.destroy = function() {
 		}
 	}
 
-	debug('destroy process end -> !objectsControllerDestroyed');
+	debug('#destroy -> !objectsControllerDestroyed');
 	this.emit('objectsControllerDestroyed')
 
 	return this;
