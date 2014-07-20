@@ -1,11 +1,9 @@
 "use strict";
 
 var TeleportServer = require('../TeleportServer.js'); //teleport-server
-var MyLogger = require('my-logger');
 
 var util = require('util');
 var events = require('events');
-var colors = require('colors');
 
 //SimpleObject
 util.inherits(SimpleObject, events.EventEmitter);
@@ -103,14 +101,6 @@ var simpleObject = new SimpleObject({
 
 //	end simpleObject
 
-//	loggers
-var infoLogger = new MyLogger.Informer('mainTest');
-var errorLogger = new MyLogger.Panic('mainTest');
-var warnLogger = new MyLogger.Warning('mainTest');
-var debugLogger = new MyLogger.CusotomLogger('mainTest', "DEBG", colors.cyan);
-
-//	end loggers
-
 //	teleportServer
 var teleportServer = new TeleportServer({
 	port: 8000,
@@ -131,7 +121,7 @@ var teleportServer = new TeleportServer({
 			]
 		}
 	}
-}).on('peerConnection', function() {
+}).on('clientConnection', function() {
 	simpleObject
 		.emitEventWithoutArgs()
 		.emitEventWithOptions()

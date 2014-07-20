@@ -631,8 +631,8 @@ describe('TeleportServer', function() {
 		socketClose(socket);
 	})
 
-	it('!peerConnection', function(done) {
-		teleportServer.on('peerConnection', function(id) {
+	it('!clientConnection', function(done) {
+		teleportServer.on('clientConnection', function(id) {
 			assert.equal(id, 0);
 			done();
 		});
@@ -646,29 +646,8 @@ describe('TeleportServer', function() {
 		});
 	})
 
-	it('!peerDisconnection', function(done) {
-		teleportServer.on('peerDisconnection', function(id) {
-			assert.equal(id, 0);
-
-			done();
-		});
-
-		socket.send({
-			type: 'internalCommand',
-			internalCommand: 'connect',
-			args: {
-				clientTimestamp: new Date().valueOf()
-			}
-		});
-
-		socket.on('message', function(message) {
-			socketClose(socket);
-		})
-	})
-
-
-	it('!peerDisconnectedTimeout', function(done) {
-		teleportServer.on('peerDisconnectedTimeout', function(id) {
+	it('!clientDisconnection', function(done) {
+		teleportServer.on('clientDisconnection', function(id) {
 			assert.equal(id, 0);
 
 			done();
@@ -687,10 +666,31 @@ describe('TeleportServer', function() {
 		})
 	})
 
-	it('!peerReconnection', function(done) {
+
+	it('!clientDisconnectedTimeout', function(done) {
+		teleportServer.on('clientDisconnectedTimeout', function(id) {
+			assert.equal(id, 0);
+
+			done();
+		});
+
+		socket.send({
+			type: 'internalCommand',
+			internalCommand: 'connect',
+			args: {
+				clientTimestamp: new Date().valueOf()
+			}
+		});
+
+		socket.on('message', function(message) {
+			socketClose(socket);
+		})
+	})
+
+	it('!clientReconnection', function(done) {
 		var clientTimestamp = new Date().valueOf();
 
-		teleportServer.on('peerDisconnection', function(id) {
+		teleportServer.on('clientDisconnection', function(id) {
 
 			var socket2 = new Socket('http://localhost:' + port, {
 				forceNew: true
@@ -708,7 +708,7 @@ describe('TeleportServer', function() {
 			socket2.on('message', function() {
 				socketClose(socket2);
 			});
-		}).on('peerReconnection', function(id) {
+		}).on('clientReconnection', function(id) {
 			assert.equal(id, 0);
 
 			done();
@@ -727,12 +727,12 @@ describe('TeleportServer', function() {
 		})
 	})
 
-	it('call command after !peerReconnection', function(done) {
+	it('call command after !clientReconnection', function(done) {
 		var clientTimestamp = new Date().valueOf();
 
-		teleportServer.on('peerConnection', function() {
+		teleportServer.on('clientConnection', function() {
 			socketClose(socket);
-		}).on('peerDisconnection', function(id) {
+		}).on('clientDisconnection', function(id) {
 
 			socket = new Socket('http://localhost:' + port, {
 				forceNew: true
@@ -746,7 +746,7 @@ describe('TeleportServer', function() {
 					peerId: id
 				}
 			})
-		}).on('peerReconnection', function(id) {
+		}).on('clientReconnection', function(id) {
 			socket.send({
 				type: 'command',
 				objectName: 'blank',
@@ -783,12 +783,12 @@ describe('TeleportServer', function() {
 		});
 	})
 
-	it('emit event after !peerReconnection', function(done) {
+	it('emit event after !clientReconnection', function(done) {
 		var clientTimestamp = new Date().valueOf();
 
-		teleportServer.on('peerConnection', function() {
+		teleportServer.on('clientConnection', function() {
 			socketClose(socket);
-		}).on('peerDisconnection', function(id) {
+		}).on('clientDisconnection', function(id) {
 
 			socket = new Socket('http://localhost:' + port, {
 				forceNew: true
@@ -802,7 +802,7 @@ describe('TeleportServer', function() {
 					peerId: id
 				}
 			})
-		}).on('peerReconnection', function(id) {
+		}).on('clientReconnection', function(id) {
 			objWithFuncAndEvents.emit('simpleEvent', 'hello')
 
 			var messageCount = 0;
@@ -834,7 +834,7 @@ describe('TeleportServer', function() {
 	it('#destroy', function(done) {
 		var clientTimestamp = new Date().valueOf();
 
-		teleportServer.on('peerConnection', function() {
+		teleportServer.on('clientConnection', function() {
 
 			teleportServer.destroy();
 		}).on('destroyed', done);
