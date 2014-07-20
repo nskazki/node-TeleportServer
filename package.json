@@ -21,13 +21,11 @@
     "jjv": "^1.0.0",
     "lodash": "^2.4.1",
     "pattern-matching": "^0.1.6",
-    "socket.io": "^1.0.6",
-    "winston": "^0.7.3"
+    "socket.io": "^1.0.6"
   },
   "devDependencies": {
     "mocha": "^1.20.1",
-    "socket.io-client": "^1.0.6",
-    "teleport-client": "^0.4.0"
+    "socket.io-client": "^1.0.6"
   },
   "keywords": [
     "RPC"
