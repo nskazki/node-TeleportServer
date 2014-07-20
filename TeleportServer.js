@@ -13,14 +13,14 @@
 
 	Events:
 
-		socketsControllerReady
+		socketsControllerReady -> ready
 		socketsControllerError
-		socketsControllerDestroyed
-		socketsControllerAlreadyDestroyed
+		socketsControllerDestroyed -> destroyed
+		socketsControllerAlreadyDestroyed -> alreadyDestroyed
 
 		peerReconnection
 		peerDisconnection
-		peerConnectionion
+		peerConnection
 		peerDisconnectedTimeout
 */
 
@@ -109,7 +109,7 @@ TeleportServer.prototype._bindOnControllersEvents = function() {
 
 
 	var sourceNames = ['socketsControllerReady', 'socketsControllerError', 'socketsControllerDestroyed', 'socketsControllerAlreadyDestroyed'];
-	var newNames = ['ready', 'error', 'destroyed', 'alreadyDestroyed'];
+	var newNames = ['ready', 'socketsControllerError', 'destroyed', 'alreadyDestroyed'];
 
 	this._createEvetnsProxy(
 		this._socketsController,
