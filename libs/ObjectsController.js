@@ -139,7 +139,7 @@ ObjectsController.prototype.down = function(peersController) {
 		}
 	}.bind(this));
 
-	peersController.on('needObjectsSend', function(peerId) {
+	peersController.on('needObjectsSend', function(peerId, token) {
 		debug('peerId: %s - ~needObjectsSend -> !needPeerSend.', peerId);
 
 		this.emit('needPeerSend', peerId, {
@@ -148,6 +148,7 @@ ObjectsController.prototype.down = function(peersController) {
 			error: null,
 			result: {
 				peerId: peerId,
+				token: token,
 				objectsProps: this._objectsProps
 			}
 		});

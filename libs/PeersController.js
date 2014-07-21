@@ -10,6 +10,7 @@
 		peerDisconnectedTimeout
 
 		needSocketSend
+		needSocketClose
 		needObjectsSend
 
 		peersControllerDestroyed
@@ -36,7 +37,7 @@ module.exports = PeersController;
 
 util.inherits(PeersController, events.EventEmitter);
 
-function PeersController(peerDisconnectedTimeout) {
+function PeersController(peerDisconnectedTimeout, authFunc) {
 	this._initAsyncEmit();
 
 	this._socketToPeerMap = {};
@@ -44,6 +45,7 @@ function PeersController(peerDisconnectedTimeout) {
 	this._peerDisconnectedTimeout = peerDisconnectedTimeout;
 
 	this._lastPeerId = 0;
+	this._authFunc = authFunc;
 
 	this._selfBind();
 
@@ -139,16 +141,25 @@ PeersController.prototype.up = function(objectsController) {
 
 PeersController.prototype.down = function(socketsController) {
 	socketsController.on('socketMessage', function(socketId, message) {
-		if (!this._findPeer(socketId)) {
-			debug('peerId: notAuth - ~socketMessage -> #_peerAuth, socketId: %s,\n\t messager: %j', socketId, message);
+		var peer = this._findPeer(socketId)
+
+		if (!peer) {
+			debug('~socketMessage - peer notAuth -> #_peerAuth, socketId: %s,\n\t messager: %j', socketId, message);
 
 			this._peerAuth(socketId, message);
-		} else {
+		} else if (jjv.test('toObjectsControllerMessage', message) && (peer._token === message.token)) {
+
 			var peerId = this._findPeerId(socketId);
 			debug('peerId: %s - ~socketMessage -> !peerMessage, socketId: %s,\n\t message: %j', peerId, socketId, message);
 
 			this.emit('peerMessage', peerId, message);
+		} else {
+			var peerId = this._findPeerId(socketId);
+
+			debug('peerId: %s - ~socketMessage - wrong token -> !needSocketClose, socketId: %s,\n\t message: %j', peerId, socketId, message);
+			this.emit('needSocketClose', socketId);
 		}
+
 	}.bind(this));
 
 	socketsController.on('socketDisconnection', function(socketId) {
@@ -183,53 +194,84 @@ PeersController.prototype._peerAuth = function(socketId, message) {
 }
 
 PeersController.prototype._peerConnect = function(socketId, message, isAlreadyConnected) {
-	var peerId = this._lastPeerId++;
-	var clientTimestamp = message.args.clientTimestamp;
+	var authData = message.args.authData;
 
-	var peer = new Peer(socketId, peerId, clientTimestamp, this._peerDisconnectedTimeout)
-		.on('timeout', function() {
-			delete this._peerList[peerId];
-			peer.removeAllListeners().destroy();
+	this._authFunc(authData, function(error, result) {
+		if (error) {
+			debug('#_peerConnect - authFunc returned error: %j, connect aborted -> !needSocketSend - with error info & !needSocketClose, socketId: %s', error, socketId);
 
-			debug('peerId: %s - ~timeout -> !peerDisconnectedTimeout.', peerId);
-			this.emit('peerDisconnectedTimeout', peerId);
-		}.bind(this));
+			this.emit('needSocketClose', socketId, {
+				type: 'internalCallback',
+				internalCommand: message.internalCommand,
+				error: error
+			});
+			return this.emit('needSocketClose', socketId);
+		}
 
-	this._socketToPeerMap[socketId] = peerId;
-	this._peerList[peerId] = peer;
+		if (result !== true) {
+			debug('#_peerConnect - authFunc returned false, connect aborted -> !needSocketSend - with error info & !needSocketClose, socketId: %s', socketId);
 
-	// one message in - one message out
-	// objectsController listenings ~needObjectsSend and emitted
-	// !needPeerSend with objects props and new peerId
-	if (isAlreadyConnected === true) {
-		debug('peerId: %s - #_peerConnect -> !peerConnection & !needSocketSend, socketId: %s,\n\t message: %j',
-			peerId, socketId, message);
+			this.emit('needSocketSend', socketId, {
+				type: 'internalCallback',
+				internalCommand: message.internalCommand,
+				error: 'auth - fail'
+			});
+			return this.emit('needSocketClose', socketId);
+		}
 
-		this.emit('needSocketSend', socketId, {
-			type: 'internalCallback',
-			internalCommand: 'reconnect',
-			error: null,
-			result: {
-				newPeerId: peerId
-			}
-		});
+		var token = generateToken();
+		var peerId = this._lastPeerId++;
 
-		this.emit('peerConnection', peerId);
-	} else {
-		debug('peerId: %s - #_peerConnect -> !peerConnection & !needObjectsSend, socketId: %s,\n\t message: %j',
-			peerId, socketId, message);
+		var peer = new Peer(socketId, peerId, this._peerDisconnectedTimeout, token)
+			.on('timeout', function() {
+				delete this._peerList[peerId];
+				peer.removeAllListeners().destroy();
 
-		this.emit('needObjectsSend', peerId);
-		this.emit('peerConnection', peerId);
+				debug('peerId: %s - ~timeout -> !peerDisconnectedTimeout.', peerId);
+				this.emit('peerDisconnectedTimeout', peerId);
+			}.bind(this));
+
+		this._socketToPeerMap[socketId] = peerId;
+		this._peerList[peerId] = peer;
+
+		// one message in - one message out
+		// objectsController listenings ~needObjectsSend and emitted
+		// !needPeerSend with objects props and new peerId
+		if (isAlreadyConnected === true) {
+			debug('peerId: %s - #_peerConnect && isAlreadyConnected === true -> !peerConnection & !needSocketSend, socketId: %s,\n\t message: %j',
+				peerId, socketId, message);
+
+			this.emit('needSocketSend', socketId, {
+				type: 'internalCallback',
+				internalCommand: 'reconnect',
+				error: null,
+				result: {
+					newPeerId: peerId,
+					newToken: token
+				}
+			});
+
+			this.emit('peerConnection', peerId);
+		} else {
+			debug('peerId: %s - #_peerConnect -> !peerConnection & !needObjectsSend, socketId: %s,\n\t message: %j',
+				peerId, socketId, message);
+
+			this.emit('needObjectsSend', peerId, token);
+			this.emit('peerConnection', peerId);
+		}
+	}.bind(this))
+
+	function generateToken() {
+		return Math.random().toString(36).substr(2) + Math.random().toString(36).substr(2);
 	}
 }
 
 PeersController.prototype._peerReconnect = function(socketId, message) {
 	var peerId = message.args.peerId;
-	var clientTimestamp = message.args.clientTimestamp;
+	var token = message.args.token;
 
 	var peer = this._peerList[peerId];
-	if (peer && (peer._clientTimestamp == clientTimestamp)) {
+	if (peer && (peer._token == token)) {
 		peer.reconnect(socketId);
 
 		this.emit('needSocketSend', socketId, {
@@ -244,12 +286,21 @@ PeersController.prototype._peerReconnect = function(socketId, message) {
 		debug('peerId: %s - #_peerReconnect -> !peerReconnection, socketId: %s,\n\t message: %j',
 			peerId, socketId, message);
 
-		return this.emit('peerReconnection', peerId);
-	} else {
-		debug('peerId: %s - #_peerReconnect -> disconnected timeout, call #_peerConnect, socketId: %s,\n\t message: %j',
+		this.emit('peerReconnection', peerId);
+	} else if (!peer) {
+		debug('peerId: %s - #_peerReconnect - disconnected timeout -> call #_peerConnect, socketId: %s,\n\t message: %j',
 			peerId, socketId, message);
 
 		this._peerConnect(socketId, message, true);
+	} else {
+		debug('peerId: %s - #_peerReconnect - wrong token -> !needSocketSend - with error info, socketId: %s\n\t message: %j',
+			peerId, socketId, message);
+
+		this.emit('needSocketSend', socketId, {
+			type: 'internalCallback',
+			internalCommand: 'reconnect',
+			error: 'wrong token'
+		});
 	}
 }
 
@@ -257,10 +308,10 @@ PeersController.prototype._peerReconnect = function(socketId, message) {
 
 util.inherits(Peer, events.EventEmitter);
 
-function Peer(socketId, peerId, clientTimestamp, peerDisconnectedTimeout) {
+function Peer(socketId, peerId, peerDisconnectedTimeout, token) {
 	this._peerId = peerId;
 	this._socketId = socketId;
-	this._clientTimestamp = clientTimestamp;
+	this._token = token;
 	this._peerDisconnectedTimeout = peerDisconnectedTimeout;
 	this._timeoutId = null;
 	this._messageQueue = [];
@@ -325,11 +376,11 @@ jjv.addSchema('connect', {
 		args: {
 			type: 'object',
 			properties: {
-				clientTimestamp: {
-					type: 'number'
+				authData: {
+					type: 'any'
 				}
 			},
-			required: ['clientTimestamp']
+			required: ['authData']
 		},
 		type: {
 			type: 'string',
@@ -349,14 +400,17 @@ jjv.addSchema('reconnect', {
 		args: {
 			type: 'object',
 			properties: {
-				clientTimestamp: {
-					type: 'number'
+				authData: {
+					type: 'any'
 				},
 				peerId: {
 					type: 'number'
+				},
+				token: {
+					type: 'string'
 				}
 			},
-			required: ['clientTimestamp', 'peerId']
+			required: ['authData', 'peerId', 'token']
 		},
 		type: {
 			type: 'string',
@@ -365,10 +419,24 @@ jjv.addSchema('reconnect', {
 		internalCommand: {
 			type: 'string',
 			'enum': ['reconnect']
-		},
-		required: ['args', 'internalCommand', 'type']
-	}
+		}
+	},
+	required: ['args', 'internalCommand', 'type']
 });
+
+jjv.addSchema('toObjectsControllerMessage', {
+	type: 'object',
+	properties: {
+		token: {
+			type: 'string'
+		}
+	},
+	required: ['token']
+});
+
+jjv.addType('any', function() {
+	return true;
+})
 
 jjv.test = function(schema, object) {
 	var error = jjv.validate(schema, object);

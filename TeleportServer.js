@@ -46,7 +46,8 @@ function TeleportServer(params) {
 	assert(patternMatching(params, {
 		peerDisconnectedTimeout: 'integer',
 		port: 'integer',
-		objects: 'teleportedObjects'
+		objects: 'teleportedObjects',
+		authFunc: 'function'
 	}), 'does not match pattern.');
 
 	this._initAsyncEmit();
@@ -55,7 +56,7 @@ function TeleportServer(params) {
 
 	this._objectsController = new ObjectsController(params.objects);
 	this._socketsController = new SocketsController(params.port);
-	this._peersController = new PeersController(params.peerDisconnectedTimeout);
+	this._peersController = new PeersController(params.peerDisconnectedTimeout, params.authFunc);
 
 	this._socketsController.up(this._peersController);
 	this._peersController.down(this._socketsController).up(this._objectsController);

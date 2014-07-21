@@ -15,10 +15,7 @@
 
 		up:
 			needSocketSend
-
-	Public:
-
-		up
+			needSocketClose
 */
 
 'use stricts';
@@ -37,7 +34,7 @@ util.inherits(SocketsController, events.EventEmitter);
 
 function SocketsController(_port) {
 	this._initAsyncEmit();
-	
+
 	this._port = _port;
 	this._socketsServer = null;
 	this._socketsList = {};
@@ -221,6 +218,14 @@ SocketsController.prototype.up = function(peersController) {
 
 		debug('socketId: %s - ~needSocketSend -> #send,\n\t message: %j', id, message);
 		ws.send(message);
+	}.bind(this));
+
+	peersController.on('needSocketClose', function(id) {
+		var ws = this._socketsList[id];
+		if (!ws) return debug('socketId: %s - ~needSocketClose, id not found', id);
+
+		debug('socketId: %s - ~needSocketClose -> close', id);
+		ws.removeAllListeners().disconnect();
 	}.bind(this));
 
 	return this;
