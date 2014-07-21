@@ -1,3 +1,5 @@
+'use strict';
+
 var SocketsController = require('../libs/SocketsController');
 var PeersController = require('../libs/PeersController');
 var ObjectsController = require('../libs/ObjectsController');

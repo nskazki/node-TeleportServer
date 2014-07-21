@@ -159,6 +159,10 @@ PeersController.prototype.down = function(socketsController) {
 			debug('peerId: %s - ~socketMessage - wrong token -> !needSocketClose & peer#destroy, socketId: %s,\n\t message: %j', peerId, socketId, message);
 		
 			this.emit('needSocketClose', socketId);
+			peer.removeAllListeners().destroy();
+
+			delete this._peerList[peerId];
+			delete this._socketToPeerMap[socketId];
 		}
 
 	}.bind(this));
@@ -361,7 +365,6 @@ Peer.prototype.destroy = function() {
 	this._messageQueue.length = 0;
 	this._peerId = null;
 	this._socketId = null;
-	this._clientTimestamp = null;
 	this._peerDisconnectedTimeout = null;
 	this._timeoutId = null;
 	this._oldSocketId = null;

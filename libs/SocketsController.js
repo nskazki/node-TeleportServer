@@ -195,7 +195,7 @@ SocketsController.prototype.close = function() {
 			isEmited = true;
 			this.emit('socketsControllerDestroyed');
 		}
-	}.bind(this), 500);
+	}.bind(this), 1500);
 
 	return this;
 

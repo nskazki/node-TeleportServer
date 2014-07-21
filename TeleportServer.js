@@ -36,7 +36,7 @@ var assert = require('assert');
 var _ = require('lodash');
 var patternMatching = require('pattern-matching');
 
-var debug = require('debug')('TeleportServer:Main');
+var debug = require('debug')('TeleportServer:main');
 
 module.exports = TeleportServer;
 
@@ -82,6 +82,7 @@ TeleportServer.prototype.destroy = function() {
 		this._peersController.destroy();
 
 	} else {
+		debug('#destroy - TeleportServer alreadyDestroyed -> !alreadyDestroyed');
 		this.emit('alreadyDestroyed');
 	}
 
