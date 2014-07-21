@@ -156,7 +156,8 @@ PeersController.prototype.down = function(socketsController) {
 		} else {
 			var peerId = this._findPeerId(socketId);
 
-			debug('peerId: %s - ~socketMessage - wrong token -> !needSocketClose, socketId: %s,\n\t message: %j', peerId, socketId, message);
+			debug('peerId: %s - ~socketMessage - wrong token -> !needSocketClose & peer#destroy, socketId: %s,\n\t message: %j', peerId, socketId, message);
+		
 			this.emit('needSocketClose', socketId);
 		}
 

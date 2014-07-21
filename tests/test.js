@@ -471,8 +471,6 @@ describe('PeersController', function() {
 		})
 	});
 
-
-
 	it('!peerDisconnection', function(done) {
 		socket.send({
 			type: 'internalCommand',
@@ -910,7 +908,7 @@ describe('TeleportServer', function() {
 						type: 'event',
 						objectName: 'blank',
 						eventName: 'simpleEvent',
-						args: ['hello']y
+						args: ['hello']
 					});
 
 					done();
@@ -944,7 +942,6 @@ describe('TeleportServer', function() {
 				authData: authData
 			}
 		});
-
 	})
 });
 
