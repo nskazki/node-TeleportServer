@@ -120,6 +120,9 @@ var teleportServer = new TeleportServer({
 				'10secIntervalEvent'
 			]
 		}
+	},
+	authFunc: function(authData, callback) {
+		callback(null, authData === 'example project');
 	}
 }).on('clientConnection', function() {
 	simpleObject
