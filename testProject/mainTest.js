@@ -103,7 +103,7 @@ var simpleObject = new SimpleObject({
 
 //	teleportServer
 var teleportServer = new TeleportServer({
-	port: 8000,
+	port: 7000,
 	peerDisconnectedTimeout: 20000,
 	objects: {
 		'simpleObject': {
@@ -124,13 +124,35 @@ var teleportServer = new TeleportServer({
 	authFunc: function(authData, callback) {
 		callback(null, authData === 'example project');
 	}
-}).on('clientConnection', function() {
-	simpleObject
-		.emitEventWithoutArgs()
-		.emitEventWithOptions()
-		.emitEventWithUnlimArgs();
+}).on('clientConnection', function(id) {
+
+	setTimeout(function() {
+		simpleObject
+			.emitEventWithoutArgs()
+			.emitEventWithOptions()
+			.emitEventWithUnlimArgs();
+	}, 100);
 });
+
+teleportServer
+	.on('ready', CreateEventLogger('ready'))
+	.on('error', CreateEventLogger('error'))
+	.on('destroyed', CreateEventLogger('destroyed'))
+	.on('alreadyDestroyed', CreateEventLogger('alreadyDestroyed'))
+	.on('clientReconnection', CreateEventLogger('clientReconnection'))
+	.on('clientDisconnection', CreateEventLogger('clientDisconnection'))
+	.on('clientConnection', CreateEventLogger('clientConnection'))
+	.on('clientDisconnectedTimeout', CreateEventLogger('clientDisconnectedTimeout'));
+
 
 //	end teleportServer
 
 //end main;
+
+//helpers
+
+function CreateEventLogger(eventName) {
+	return function() {
+		console.log('eventName: %s, arguments: %j', eventName, arguments);
+	};
+}
