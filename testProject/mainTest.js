@@ -144,7 +144,6 @@ teleportServer
 	.on('clientConnection', CreateEventLogger('clientConnection'))
 	.on('clientDisconnectedTimeout', CreateEventLogger('clientDisconnectedTimeout'));
 
-
 //	end teleportServer
 
 //end main;
