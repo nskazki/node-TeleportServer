@@ -58,6 +58,9 @@ SocketsController.prototype.destroy = function() {
 			}
 		}
 
+		//
+		//DES logic
+
 		setTimeout(function() {
 			this.close();
 		}.bind(this), 200);
@@ -66,6 +69,14 @@ SocketsController.prototype.destroy = function() {
 		//console.log('because method #close not work in socket.io.');
 		//console.log('i jast can send to peers "disconnect" message.')
 		//console.log('im sorry');
+
+		//
+		//NEW logic
+		//socket.io update to @1.1.0 and restored #close method
+		
+		// setTimeout(function() {
+		// 	this._socketsServer.close();
+		// }.bind(this), 200);
 
 	} else {
 		debug('server already destroyed -> !socketsControllerAlreadyDestroyed');
