@@ -28,8 +28,6 @@ module.exports = ObjectsController;
 util.inherits(ObjectsController, events.EventEmitter);
 
 function ObjectsController(objects) {
-	this._initAsyncEmit();
-
 	this._objects = objects;
 	this._objectsProps = this._formatObjectsProps(objects);
 	this._eventsSubscription(objects);
@@ -69,17 +67,6 @@ ObjectsController.prototype.destroy = function() {
 
 	return this;
 };
-
-ObjectsController.prototype._initAsyncEmit = function() {
-	var vanullaEmit = this.emit;
-	this.emit = function() {
-		var asyncArguments = arguments;
-
-		process.nextTick(function() {
-			vanullaEmit.apply(this, asyncArguments);
-		}.bind(this));
-	}.bind(this);
-}
 
 ObjectsController.prototype._eventsSubscription = function(_objects) {
 	for (var objectName in _objects) {

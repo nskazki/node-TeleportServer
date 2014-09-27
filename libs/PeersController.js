@@ -38,8 +38,6 @@ module.exports = PeersController;
 util.inherits(PeersController, events.EventEmitter);
 
 function PeersController(peerDisconnectedTimeout, authFunc) {
-	this._initAsyncEmit();
-
 	this._socketToPeerMap = {};
 	this._peerList = {};
 	this._peerDisconnectedTimeout = peerDisconnectedTimeout;
@@ -72,17 +70,6 @@ PeersController.prototype.destroy = function() {
 	}
 
 	return this;
-}
-
-PeersController.prototype._initAsyncEmit = function() {
-	var vanullaEmit = this.emit;
-	this.emit = function() {
-		var asyncArguments = arguments;
-
-		process.nextTick(function() {
-			vanullaEmit.apply(this, asyncArguments);
-		}.bind(this));
-	}.bind(this);
 }
 
 PeersController.prototype._selfBind = function() {

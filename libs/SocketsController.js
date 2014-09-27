@@ -33,8 +33,6 @@ module.exports = SocketsController;
 util.inherits(SocketsController, events.EventEmitter);
 
 function SocketsController(_port) {
-	this._initAsyncEmit();
-
 	this._port = _port;
 	this._socketsServer = null;
 	this._socketsList = {};
@@ -58,9 +56,6 @@ SocketsController.prototype.destroy = function() {
 			}
 		}
 
-		//
-		//DES logic
-
 		setTimeout(function() {
 			this.close();
 		}.bind(this), 200);
@@ -70,14 +65,6 @@ SocketsController.prototype.destroy = function() {
 		//console.log('i jast can send to peers "disconnect" message.')
 		//console.log('im sorry');
 
-		//
-		//NEW logic
-		//socket.io update to @1.1.0 and restored #close method
-		
-		// setTimeout(function() {
-		// 	this._socketsServer.close();
-		// }.bind(this), 200);
-
 	} else {
 		debug('server already destroyed -> !socketsControllerAlreadyDestroyed');
 
@@ -85,17 +72,6 @@ SocketsController.prototype.destroy = function() {
 	}
 
 	return this;
-}
-
-SocketsController.prototype._initAsyncEmit = function() {
-	var vanullaEmit = this.emit;
-	this.emit = function() {
-		var asyncArguments = arguments;
-
-		process.nextTick(function() {
-			vanullaEmit.apply(this, asyncArguments);
-		}.bind(this));
-	}.bind(this);
 }
 
 SocketsController.prototype._init = function() {

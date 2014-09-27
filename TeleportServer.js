@@ -50,8 +50,6 @@ function TeleportServer(params) {
 		authFunc: 'function'
 	}), 'does not match pattern.');
 
-	this._initAsyncEmit();
-
 	this._params = params;
 
 	this._objectsController = new ObjectsController(params.objects);
@@ -88,17 +86,6 @@ TeleportServer.prototype.destroy = function() {
 
 	return this;
 };
-
-TeleportServer.prototype._initAsyncEmit = function() {
-	var vanullaEmit = this.emit;
-	this.emit = function() {
-		var asyncArguments = arguments;
-
-		process.nextTick(function() {
-			vanullaEmit.apply(this, asyncArguments);
-		}.bind(this));
-	}.bind(this);
-}
 
 TeleportServer.prototype._bindOnControllersEvents = function() {
 	var peerSourceNames = ['peerReconnection', 'peerDisconnection', 'peerConnection', 'peerDisconnectedTimeout'];
