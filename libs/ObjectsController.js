@@ -159,14 +159,15 @@ ObjectsController.prototype._callCommand = function(peerId, message) {
 	}
 
 	function createCommandCallback(peerId, message) {
-		return function(error, result) {
+		return function(/*error, result*/) {
 			var resultToSend = {
 				objectName: message.objectName,
 				type: "callback",
 				methodName: message.methodName,
 				requestId: message.requestId,
-				error: error,
-				result: result
+				// error: error,
+				// result: result
+				resultArgs: Array.prototype.slice.apply(arguments) 
 			};
 
 			debug('peerId: %s - #_callCommand-callback -> !needPeerSend,\n\t message: %j', peerId, message);

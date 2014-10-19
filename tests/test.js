@@ -648,8 +648,12 @@ describe('ObjectsController', function() {
 					objectName: 'blank',
 					methodName: 'simpleFunc',
 					requestId: 0,
-					error: null,
-					result: 'some arg'
+					// error: null,
+					// result: 'some arg'
+					resultArgs: {
+						"0": null,
+						"1": "some arg"
+					}
 				});
 
 				done();
@@ -857,8 +861,12 @@ describe('TeleportServer', function() {
 						objectName: 'blank',
 						methodName: 'simpleFunc',
 						requestId: 0,
-						error: null,
-						result: 'nyan'
+						// error: null,
+						// result: 'nyan'
+						resultArgs: {
+							"0": null,
+							"1": "nyan"
+						}
 					});
 
 					done();
