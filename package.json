@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/nskazki/node-TeleportServer",
   "dependencies": {
-    "debug": "^1.0.3",
+    "debug": "^4.1.1",
     "jjv": "^1.0.0",
     "lodash": "^2.4.1",
     "pattern-matching": "^0.1.6",
