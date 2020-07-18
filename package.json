@@ -19,7 +19,7 @@
   "dependencies": {
     "debug": "^1.0.3",
     "jjv": "^1.0.0",
-    "lodash": "^2.4.1",
+    "lodash": "^4.17.19",
     "pattern-matching": "^0.1.6",
     "socket.io": "1.0.6"
   },
